@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thermal Webcam</title>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    video {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="display"></canvas>
+
+  <script>
+    let energyScore = 0.5;
+    let faceScore = 0.5;
+    let lastDetection = null;
+    let targetFaceScore = 0.4;
+    let expressionIntensity = 0;
+    let targetExpressionIntensity = 0;
+    let lastExpressions = null;
+    let moodSadLatch = 0;
+    let moodAngryLatch = 0;
+    let moodExpressionStable = "neutral";
+
+    const canvas = document.getElementById("display");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    const video = document.getElementById("video");
+    const offscreen = document.createElement("canvas");
+    const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
+
+    let displayW = 0;
+    let displayH = 0;
+    const MAX_PROCESS_WIDTH = 540;
+    let bgLUT = [];
+    let coolLUT = [];
+    let hotLUT = [];
+    let activeLUT = [];
+    let detectionTimer = null;
+    let lutLogged = false;
+    let lastLutEnergy = -1;
+    let lastFaceBox = null;
+    let liveFace = null;
+    let faceDetectVersion = 0;
+    let consumedFaceVersion = -1;
+    let faceTrackBusy = false;
+    let modelsReady = false;
+    let moveLevel = 0;
+    let trailHeat = 0;
+    let prevLumaFrame = new Float32Array(0);
+    let motionEmber = new Float32Array(0);
+    let motionEmberTmp = new Float32Array(0);
+    let motionSpeedEmber = new Float32Array(0);
+    let motionSpeedEmberTmp = new Float32Array(0);
+
+    const detectCanvas = document.createElement("canvas");
+    detectCanvas.width = 320;
+    detectCanvas.height = 240;
+    const detectCtx = detectCanvas.getContext("2d", { willReadFrequently: true });
+
+    const expressionScores = {
+      happy: 1.0,
+      surprised: 0.85,
+      neutral: 0.4,
+      fearful: 0.3,
+      angry: 0.2,
+      disgusted: 0.15,
+      sad: 0.1
+    };
+
+    const coolPalette = [
+      { l: 0,   r: 0,   g: 0,   b: 0   },
+      { l: 55,  r: 2,   g: 8,   b: 28  },
+      { l: 95,  r: 8,   g: 22,  b: 52  },
+      { l: 130, r: 32,  g: 8,   b: 90  },
+      { l: 165, r: 104, g: 8,   b: 120 },
+      { l: 200, r: 175, g: 22,  b: 85  },
+      { l: 230, r: 220, g: 80,  b: 20  },
+      { l: 255, r: 255, g: 205, b: 70  }
+    ];
+
+    const hotPalette = [
+      { l: 0,   r: 0,   g: 0,   b: 0   },
+      { l: 55,  r: 2,   g: 10,  b: 24  },
+      { l: 95,  r: 10,  g: 26,  b: 44  },
+      { l: 125, r: 58,  g: 8,   b: 80  },
+      { l: 155, r: 145, g: 12,  b: 95  },
+      { l: 185, r: 215, g: 28,  b: 45  },
+      { l: 210, r: 250, g: 95,  b: 0   },
+      { l: 230, r: 255, g: 165, b: 0   },
+      { l: 245, r: 255, g: 220, b: 40  },
+      { l: 255, r: 255, g: 255, b: 255 }
+    ];
+
+    const bgPalette = [
+      { l: 0,   r: 0,  g: 0,  b: 0  },
+      { l: 90,  r: 0,  g: 8,  b: 20 },
+      { l: 170, r: 2,  g: 22, b: 40 },
+      { l: 255, r: 8,  g: 36, b: 64 }
+    ];
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function blurEmberField(src, dst, w, h) {
+      for (let y = 0; y < h; y += 1) {
+        const row = y * w;
+        const rowUp = y > 0 ? row - w : row;
+        const rowDown = y < h - 1 ? row + w : row;
+        for (let x = 0; x < w; x += 1) {
+          const p = row + x;
+          let sum = src[p] * 0.18;
+          let weight = 0.18;
+          const add = (idx, wgt) => {
+            if (idx >= 0 && idx < w * h) {
+              sum += src[idx] * wgt;
+              weight += wgt;
+            }
+          };
+          add(p - 1, 0.12);
+          add(p + 1, 0.12);
+          add(rowUp + x, 0.12);
+          add(rowDown + x, 0.12);
+          add(rowUp + x - 1, 0.055);
+          add(rowUp + x + 1, 0.055);
+          add(rowDown + x - 1, 0.055);
+          add(rowDown + x + 1, 0.055);
+          if (x > 1) add(p - 2, 0.035);
+          if (x < w - 2) add(p + 2, 0.035);
+          if (y > 1) add(p - w * 2, 0.035);
+          if (y < h - 2) add(p + w * 2, 0.035);
+          dst[p] = sum / weight;
+        }
+      }
+    }
+
+    function sampleEmberBilinear(field, w, h, fx, fy) {
+      const x0 = clamp(Math.floor(fx), 0, w - 1);
+      const y0 = clamp(Math.floor(fy), 0, h - 1);
+      const x1 = clamp(x0 + 1, 0, w - 1);
+      const y1 = clamp(y0 + 1, 0, h - 1);
+      const tx = fx - x0;
+      const ty = fy - y0;
+      const i00 = field[y0 * w + x0];
+      const i10 = field[y0 * w + x1];
+      const i01 = field[y1 * w + x0];
+      const i11 = field[y1 * w + x1];
+      const top = lerp(i00, i10, tx);
+      const bot = lerp(i01, i11, tx);
+      return lerp(top, bot, ty);
+    }
+
+    function moodyTrailRgb(intensity, energy, speedBoost) {
+      const local = clamp(intensity, 0, 1);
+      const speed = clamp(speedBoost, 0, 1);
+      const emotionalWarmth = clamp(energy * 0.05, 0, 0.08);
+      // Prioritize per-region speed so trail hue varies by local movement velocity.
+      const motionHeat = clamp((local * 0.34) + (speed * 0.98) + emotionalWarmth, 0, 1.12);
+
+      // Slow movement: subtle purple.
+      if (motionHeat < 0.3) {
+        const u = motionHeat / 0.3;
+        return {
+          r: Math.round(lerp(34, 86, u)),
+          g: Math.round(lerp(6, 14, u)),
+          b: Math.round(lerp(146, 138, u))
+        };
+      }
+      // Medium: purple -> magenta/pink.
+      if (motionHeat < 0.55) {
+        const u = (motionHeat - 0.3) / 0.25;
+        return {
+          r: Math.round(lerp(86, 206, u)),
+          g: Math.round(lerp(14, 22, u)),
+          b: Math.round(lerp(138, 106, u))
+        };
+      }
+      // Fast: magenta/pink -> orange.
+      if (motionHeat < 0.82) {
+        const u = (motionHeat - 0.55) / 0.27;
+        return {
+          r: Math.round(lerp(206, 255, u)),
+          g: Math.round(lerp(22, 126, u)),
+          b: Math.round(lerp(106, 18, u))
+        };
+      }
+      // Very fast: orange -> yellow/amber (still no white trails).
+      const u = (motionHeat - 0.82) / 0.33;
+      return {
+        r: 255,
+        g: Math.round(lerp(126, 245, u)),
+        b: Math.round(lerp(18, 12, u))
+      };
+    }
+
+    function facePeakColor(expression, heatMix) {
+      const t = clamp(heatMix, 0, 1);
+      if (expression === "sad") {
+        // Sad mode peaks in cyan instead of yellow.
+        return {
+          r: Math.round(lerp(58, 118, t)),
+          g: Math.round(lerp(186, 246, t)),
+          b: Math.round(lerp(212, 255, t))
+        };
+      }
+      if (expression === "angry") {
+        // Angry mode peaks in red.
+        return {
+          r: 255,
+          g: Math.round(lerp(72, 26, t)),
+          b: Math.round(lerp(48, 16, t))
+        };
+      }
+      return {
+        r: 255,
+        g: Math.round(lerp(200, 238, t)),
+        b: Math.round(lerp(55, 115, t))
+      };
+    }
+
+    function samplePalette(palette, luminance) {
+      const value = clamp(luminance, 0, 255);
+      for (let i = 0; i < palette.length - 1; i += 1) {
+        const a = palette[i];
+        const b = palette[i + 1];
+        if (value >= a.l && value <= b.l) {
+          const t = (value - a.l) / (b.l - a.l || 1);
+      return {
+            r: Math.round(lerp(a.r, b.r, t)),
+            g: Math.round(lerp(a.g, b.g, t)),
+            b: Math.round(lerp(a.b, b.b, t))
+          };
+        }
+      }
+      const tail = palette[palette.length - 1];
+      return { r: tail.r, g: tail.g, b: tail.b };
+    }
+
+    function buildFixedLUTFromPalette(palette) {
+      const lut = new Array(256);
+      for (let i = 0; i < 256; i += 1) {
+        lut[i] = samplePalette(palette, i);
+      }
+      return lut;
+    }
+
+    function rebuildActiveLUT(force = false) {
+      if (!force && Math.abs(energyScore - lastLutEnergy) <= 0.012) return;
+      const lut = new Array(256);
+      for (let i = 0; i < 256; i += 1) {
+        const coolColor = coolLUT[i];
+        const hotColor = hotLUT[i];
+        lut[i] = {
+          r: Math.round(coolColor.r + (hotColor.r - coolColor.r) * energyScore),
+          g: Math.round(coolColor.g + (hotColor.g - coolColor.g) * energyScore),
+          b: Math.round(coolColor.b + (hotColor.b - coolColor.b) * energyScore)
+        };
+      }
+      activeLUT = lut;
+      lastLutEnergy = energyScore;
+      if (!lutLogged) {
+        console.log("LUT ready");
+        lutLogged = true;
+        modelsReady = true;
+      }
+    }
+
+    function getCoverTransform(targetW, targetH) {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) return null;
+      const scale = Math.max(targetW / vw, targetH / vh);
+      return {
+        scale,
+        dx: (targetW - (vw * scale)) / 2,
+        dy: (targetH - (vh * scale)) / 2
+      };
+    }
+
+    function mapDetectBoxToTarget(box, targetW, targetH) {
+      if (!box) return null;
+      const detectTransform = getCoverTransform(detectCanvas.width, detectCanvas.height);
+      const targetTransform = getCoverTransform(targetW, targetH);
+      if (!detectTransform || !targetTransform) return null;
+
+      const srcX = (box.x - detectTransform.dx) / detectTransform.scale;
+      const srcY = (box.y - detectTransform.dy) / detectTransform.scale;
+      const srcW = box.width / detectTransform.scale;
+      const srcH = box.height / detectTransform.scale;
+
+      return {
+        x: srcX * targetTransform.scale + targetTransform.dx,
+        y: srcY * targetTransform.scale + targetTransform.dy,
+        width: srcW * targetTransform.scale,
+        height: srcH * targetTransform.scale
+      };
+    }
+
+    function resizeCanvases() {
+      displayW = window.innerWidth;
+      displayH = window.innerHeight;
+      canvas.width = displayW;
+      canvas.height = displayH;
+      const procW = Math.max(240, Math.min(MAX_PROCESS_WIDTH, displayW));
+      const procH = Math.max(1, Math.round((procW / displayW) * displayH));
+      offscreen.width = procW;
+      offscreen.height = procH;
+      ctx.imageSmoothingEnabled = true;
+    }
+
+    function drawVideoCover() {
+      const transform = getCoverTransform(offscreen.width, offscreen.height);
+      if (!transform) return;
+      offCtx.drawImage(
+        video,
+        transform.dx,
+        transform.dy,
+        video.videoWidth * transform.scale,
+        video.videoHeight * transform.scale
+      );
+    }
+
+    function drawVideoCoverTo(ctx2d, targetW, targetH) {
+      const transform = getCoverTransform(targetW, targetH);
+      if (!transform) return false;
+
+      ctx2d.clearRect(0, 0, targetW, targetH);
+      ctx2d.drawImage(
+        video,
+        transform.dx,
+        transform.dy,
+        video.videoWidth * transform.scale,
+        video.videoHeight * transform.scale
+      );
+      return true;
+    }
+
+    function computeExpressionIntensity(expressions) {
+      const happy = expressions.happy || 0;
+      const surprised = expressions.surprised || 0;
+      const neutral = expressions.neutral || 0;
+      const sad = expressions.sad || 0;
+      const angry = expressions.angry || 0;
+      const positiveSignal = (happy * 1.08) + (surprised * 0.92);
+      const dampen = (neutral * 0.42) + (sad * 0.18) + (angry * 0.08);
+      const raw = positiveSignal - dampen;
+      return clamp(Math.pow(clamp(raw, 0, 1.2) / 1.2, 0.75), 0, 1);
+    }
+
+    function getLiveExpression(expressions) {
+      let bestName = "neutral";
+      let bestScore = 0;
+      const neutralScore = expressions.neutral || 0;
+      for (const [name, score] of Object.entries(expressions)) {
+        if (score > bestScore) {
+          bestName = name;
+          bestScore = score;
+        }
+      }
+      if (
+        bestName !== "neutral" &&
+        neutralScore > bestScore - 0.07 &&
+        neutralScore > 0.32
+      ) {
+        bestName = "neutral";
+        bestScore = neutralScore;
+      }
+      if (bestScore < 0.38) {
+        bestName = "neutral";
+        bestScore = Math.max(neutralScore, bestScore);
+      }
+      return { name: bestName, score: bestScore };
+    }
+
+    function updateMoodState(expressions) {
+      const sadRaw = clamp(expressions?.sad || 0, 0, 1);
+      const angryRaw = clamp(expressions?.angry || 0, 0, 1);
+      const neutralRaw = clamp(expressions?.neutral || 0, 0, 1);
+
+      const sadTarget = sadRaw > 0.32 ? sadRaw : 0;
+      const angryTarget = angryRaw > 0.32 ? angryRaw : 0;
+
+      moodSadLatch = lerp(moodSadLatch, sadTarget, sadTarget > moodSadLatch ? 0.28 : 0.06);
+      moodAngryLatch = lerp(moodAngryLatch, angryTarget, angryTarget > moodAngryLatch ? 0.28 : 0.06);
+
+      if (moodExpressionStable === "sad") {
+        if (moodSadLatch < 0.2 && moodAngryLatch > 0.48) moodExpressionStable = "angry";
+        else if (moodSadLatch < 0.16) moodExpressionStable = "neutral";
+      } else if (moodExpressionStable === "angry") {
+        if (moodAngryLatch < 0.2 && moodSadLatch > 0.48) moodExpressionStable = "sad";
+        else if (moodAngryLatch < 0.16) moodExpressionStable = "neutral";
+      } else {
+        if (moodSadLatch > 0.52 && moodSadLatch > moodAngryLatch + 0.08 && sadRaw > neutralRaw - 0.08) {
+          moodExpressionStable = "sad";
+        } else if (moodAngryLatch > 0.52 && moodAngryLatch > moodSadLatch + 0.08) {
+          moodExpressionStable = "angry";
+        }
+      }
+    }
+
+    function updateLiveEnergy() {
+      const intLerp = targetExpressionIntensity > expressionIntensity ? 0.32 : 0.14;
+      expressionIntensity = lerp(expressionIntensity, targetExpressionIntensity, intLerp);
+      const faceLerp = targetFaceScore > faceScore ? 0.22 : 0.1;
+      faceScore = lerp(faceScore, targetFaceScore, faceLerp);
+      const expressionEnergy = lerp(0.4, 0.92, expressionIntensity);
+      const nextEnergy = clamp(expressionEnergy, 0, 1);
+      const energyLerp = nextEnergy > energyScore ? 0.28 : 0.12;
+      energyScore = lerp(energyScore, nextEnergy, energyLerp);
+      rebuildActiveLUT();
+    }
+
+    function moveTowards(value, target, step) {
+      if (value < target) return Math.min(value + step, target);
+      if (value > target) return Math.max(value - step, target);
+      return value;
+    }
+
+    function drawDebugOverlay() {
+      const hasFace = Boolean(lastDetection);
+      const exprText = hasFace
+        ? `${lastDetection.expression} (${lastDetection.probability.toFixed(2)}) i:${expressionIntensity.toFixed(2)}`
+        : "none (0.00)";
+
+      ctx.save();
+      ctx.font = "11px monospace";
+      ctx.fillStyle = "#ffffff";
+      ctx.textBaseline = "top";
+      ctx.fillText(`ENERGY: ${energyScore.toFixed(2)}`, 12, 10);
+      ctx.fillText(`FACE: ${hasFace ? "yes" : "no"}`, 12, 24);
+      ctx.fillText(`EXPR: ${exprText}`, 12, 38);
+      ctx.fillText(`MOVE: ${moveLevel.toFixed(2)}`, 12, 52);
+      ctx.restore();
+    }
+
+    async function loadModelsFrom(baseUri) {
+      const loaders = [
+        { name: "tinyFaceDetector", load: () => faceapi.nets.tinyFaceDetector.loadFromUri(baseUri) },
+        { name: "faceLandmark68Net", load: () => faceapi.nets.faceLandmark68Net.loadFromUri(baseUri) },
+        { name: "faceExpressionNet", load: () => faceapi.nets.faceExpressionNet.loadFromUri(baseUri) }
+      ];
+
+      for (const model of loaders) {
+        try {
+          await model.load();
+          console.log(`Model loaded: ${model.name} from ${baseUri}`);
+        } catch (error) {
+          console.error(`Model failed: ${model.name} from ${baseUri}`, error);
+          throw error;
+        }
+      }
+    }
+
+    async function loadModels() {
+      if (!window.faceapi) {
+        throw new Error("face-api.js did not load");
+      }
+
+      const localBase = "/models";
+      const fallbackBase = "https://justadudewhohacks.github.io/face-api.js/models";
+
+      try {
+        await loadModelsFrom(localBase);
+      } catch (localError) {
+        console.warn("Local /models load failed, trying fallback CDN models.");
+        await loadModelsFrom(fallbackBase);
+      }
+    }
+
+    async function runFaceTrackOnly() {
+      if (video.readyState < 2 || !modelsReady) return;
+      if (!drawVideoCoverTo(detectCtx, 224, 168)) return;
+
+      try {
+        const result = await faceapi.detectSingleFace(
+          detectCanvas,
+          new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.32 })
+        );
+        if (result) {
+          lastFaceBox = result.detection.box;
+          faceDetectVersion += 1;
+        }
+      } catch (error) {
+        console.error("Face track error", error);
+      }
+    }
+
+    async function runFaceDetection() {
+      if (video.readyState < 2) return;
+      if (!drawVideoCoverTo(detectCtx, detectCanvas.width, detectCanvas.height)) return;
+
+      try {
+        const result = await faceapi
+          .detectSingleFace(detectCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.35 }))
+          .withFaceLandmarks()
+          .withFaceExpressions();
+
+        if (result) {
+          lastExpressions = result.expressions;
+          updateMoodState(result.expressions);
+          const live = getLiveExpression(result.expressions);
+          targetExpressionIntensity = computeExpressionIntensity(result.expressions);
+          lastDetection = {
+            expression: live.name,
+            probability: live.score,
+            intensity: targetExpressionIntensity
+          };
+          lastFaceBox = result.detection.box;
+          faceDetectVersion += 1;
+          const baseScore = expressionScores[live.name] ?? 0.3;
+          targetFaceScore = lerp(0.4, baseScore, 0.35) + (targetExpressionIntensity * 0.65);
+          targetFaceScore = clamp(targetFaceScore, 0.35, 1.0);
+        } else {
+          updateMoodState(null);
+          lastDetection = null;
+          lastFaceBox = null;
+          lastExpressions = null;
+          targetFaceScore = 0.3;
+          targetExpressionIntensity = 0;
+        }
+      } catch (error) {
+        console.error("Detection error", error);
+        updateMoodState(null);
+        lastDetection = null;
+        lastFaceBox = null;
+        targetFaceScore = 0.3;
+      }
+    }
+
+    function startDetectionLoop() {
+      if (detectionTimer) clearInterval(detectionTimer);
+      detectionTimer = setInterval(() => {
+        runFaceDetection().catch((error) => {
+          console.error("Detection tick failed", error);
+        });
+      }, 100);
+    }
+
+    function renderFrame() {
+      updateLiveEnergy();
+
+      offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+      drawVideoCover();
+
+      const procW = offscreen.width;
+      const procH = offscreen.height;
+      const pixelCount = procW * procH;
+      const emberW = Math.max(160, procW >> 1);
+      const emberH = Math.max(120, procH >> 1);
+      const emberCount = emberW * emberH;
+      if (prevLumaFrame.length !== pixelCount) {
+        prevLumaFrame = new Float32Array(pixelCount);
+      }
+      if (motionEmber.length !== emberCount) {
+        motionEmber = new Float32Array(emberCount);
+        motionEmberTmp = new Float32Array(emberCount);
+        motionSpeedEmber = new Float32Array(emberCount);
+        motionSpeedEmberTmp = new Float32Array(emberCount);
+      }
+      for (let ep = 0; ep < emberCount; ep += 1) {
+        // More subtle persistence: short, soft-lived trails.
+        motionEmberTmp[ep] = motionEmber[ep] * 0.9;
+        motionSpeedEmberTmp[ep] = motionSpeedEmber[ep] * 0.88;
+      }
+
+      if (!faceTrackBusy && modelsReady) {
+        faceTrackBusy = true;
+        runFaceTrackOnly().finally(() => {
+          faceTrackBusy = false;
+        });
+      }
+
+      const frame = offCtx.getImageData(0, 0, procW, procH);
+      const data = frame.data;
+      const faceBox = mapDetectBoxToTarget(lastFaceBox, procW, procH);
+      if (faceBox) {
+        const tcx = faceBox.x + (faceBox.width * 0.5);
+        const tcy = faceBox.y + (faceBox.height * 0.56);
+        const trx = Math.max(24, faceBox.width * 0.5);
+        const tRy = Math.max(38, faceBox.height * 0.95);
+        if (!liveFace) {
+          liveFace = {
+            cx: tcx,
+            cy: tcy,
+            rx: trx,
+            ry: tRy,
+            height: faceBox.height,
+            glowCx: tcx,
+            glowCy: tcy,
+            glowRx: trx,
+            glowRy: tRy
+          };
+        } else if (faceDetectVersion !== consumedFaceVersion) {
+          consumedFaceVersion = faceDetectVersion;
+          liveFace.cx = lerp(liveFace.cx, tcx, 0.48);
+          liveFace.cy = lerp(liveFace.cy, tcy, 0.48);
+          liveFace.rx = lerp(liveFace.rx, trx, 0.38);
+          liveFace.ry = lerp(liveFace.ry, tRy, 0.38);
+          liveFace.height = lerp(liveFace.height, faceBox.height, 0.38);
+        } else {
+          liveFace.rx = lerp(liveFace.rx, trx, 0.22);
+          liveFace.ry = lerp(liveFace.ry, tRy, 0.22);
+          liveFace.height = lerp(liveFace.height, faceBox.height, 0.22);
+          liveFace.cx = lerp(liveFace.cx, tcx, 0.26);
+          liveFace.cy = lerp(liveFace.cy, tcy, 0.26);
+        }
+
+        let trackMass = 0;
+        let trackSumX = 0;
+        let trackSumY = 0;
+        const minY = Math.max(0, Math.floor(liveFace.cy - liveFace.ry * 1.35));
+        const maxY = Math.min(procH - 1, Math.ceil(liveFace.cy + liveFace.ry * 1.35));
+        const minX = Math.max(0, Math.floor(liveFace.cx - liveFace.rx * 1.35));
+        const maxX = Math.min(procW - 1, Math.ceil(liveFace.cx + liveFace.rx * 1.35));
+        for (let ty = minY; ty <= maxY; ty += 3) {
+          for (let tx = minX; tx <= maxX; tx += 3) {
+            const tp = ty * procW + tx;
+            const ti = tp * 4;
+            const tLum = (0.299 * data[ti] + 0.587 * data[ti + 1] + 0.114 * data[ti + 2]) / 255;
+            const tDelta = Math.abs(tLum - prevLumaFrame[tp]);
+            const tex = (tx - liveFace.cx) / (liveFace.rx * 1.2);
+            const tey = (ty - liveFace.cy) / (liveFace.ry * 1.2);
+            if ((tex * tex + tey * tey) > 1.1 || tDelta < 0.018) continue;
+            trackMass += tDelta;
+            trackSumX += tx * tDelta;
+            trackSumY += ty * tDelta;
+          }
+        }
+        if (trackMass > 0.014) {
+          const mx = trackSumX / trackMass;
+          const my = trackSumY / trackMass;
+          const offX = (mx - liveFace.cx) / liveFace.rx;
+          const offY = (my - liveFace.cy) / liveFace.ry;
+          if ((offX * offX + offY * offY) < 0.65) {
+            liveFace.cx = lerp(liveFace.cx, mx, 0.16);
+            liveFace.cy = lerp(liveFace.cy, my, 0.16);
+          }
+        }
+
+        liveFace.glowCx = lerp(liveFace.glowCx, liveFace.cx, 0.1);
+        liveFace.glowCy = lerp(liveFace.glowCy, liveFace.cy, 0.1);
+        liveFace.glowRx = lerp(liveFace.glowRx, liveFace.rx, 0.07);
+        liveFace.glowRy = lerp(liveFace.glowRy, liveFace.ry, 0.07);
+      } else if (liveFace) {
+        liveFace.rx *= 0.9;
+        liveFace.ry *= 0.9;
+        if (liveFace.rx < 12) liveFace = null;
+      }
+
+      const hasFace = Boolean(liveFace);
+      const cx = hasFace ? liveFace.glowCx : 0;
+      const cy = hasFace ? liveFace.glowCy : 0;
+      const rx = hasFace ? liveFace.glowRx : 1;
+      const ry = hasFace ? liveFace.glowRy : 1;
+      const faceHeight = hasFace ? liveFace.height : 0;
+      const bodyCx = hasFace ? cx : 0;
+      const bodyCy = hasFace ? cy + (faceHeight * 1.45) : 0;
+      const bodyRx = hasFace ? Math.max(42, rx * 2.36) : 1;
+      const bodyRy = hasFace ? Math.max(72, ry * 2.58) : 1;
+      const exprHeat = clamp(expressionIntensity, 0, 1);
+      const exprHeatCurve = Math.pow(exprHeat, 0.88);
+      const baseExpression = lastDetection?.expression || "neutral";
+      const currentExpression = (moodExpressionStable === "sad" || moodExpressionStable === "angry")
+        ? moodExpressionStable
+        : baseExpression;
+      const expressionConfidence = currentExpression === "sad"
+        ? moodSadLatch
+        : currentExpression === "angry"
+          ? moodAngryLatch
+          : clamp(lastDetection?.probability || 0, 0, 1);
+      const moodDrivenExpression = currentExpression === "sad" || currentExpression === "angry";
+      let frameMotionPeak = 0;
+      let movePixelCount = 0;
+
+      for (let y = 0; y < procH; y += 1) {
+        for (let x = 0; x < procW; x += 1) {
+          const i = (y * procW + x) * 4;
+          const p = y * procW + x;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+        const rawLum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        const delta = Math.abs(rawLum - prevLumaFrame[p]);
+        prevLumaFrame[p] = rawLum;
+        const bgIndex = Math.min(255, Math.floor(Math.pow(rawLum, 1.15) * 255));
+        const bg = bgLUT[bgIndex] || { r: 0, g: 0, b: 0 };
+
+        let warmMix = 0;
+        let thermalBoost = 0;
+        let trailMask = 0;
+        if (hasFace) {
+          const exFace = (x - cx) / rx;
+          const eyFace = (y - cy) / ry;
+          const distFace = Math.sqrt((exFace * exFace) + (eyFace * eyFace));
+          const exBody = (x - bodyCx) / bodyRx;
+          const eyBody = (y - bodyCy) / bodyRy;
+          const distBody = Math.sqrt((exBody * exBody) + (eyBody * eyBody));
+
+          const faceInfluence = Math.pow(clamp(1 - distFace, 0, 1), 1.28);
+          const bodyInfluence = Math.pow(clamp(1 - distBody, 0, 1), 1.25);
+          const humanInfluence = Math.max(faceInfluence, bodyInfluence * 0.92);
+          const faceCore = Math.pow(clamp(1 - distFace, 0, 1), 2.35);
+          const wholeFace = Math.pow(clamp(1 - distFace, 0, 1), 0.92);
+          const edgeSoft = Math.pow(clamp(1 - (distFace * 0.86), 0, 1), 1.4);
+          const containFace = clamp(1 - distFace, 0, 1);
+          const eyForehead = (y - (cy - ry * 0.46)) / (ry * 1.42);
+          const distForehead = Math.sqrt((exFace * exFace) + (eyForehead * eyForehead));
+          const containForehead = clamp(1 - distForehead, 0, 1);
+          const containBody = clamp(1 - distBody, 0, 1);
+          const personContain = Math.max(Math.pow(containFace, 0.95), Math.pow(containBody, 2.6));
+          trailMask = Math.pow(personContain, 1.45);
+
+          const skinLikely = clamp(((r - b) + 20) / 120, 0, 1) * clamp(((g - b) + 10) / 90, 0, 1);
+          const heatPotential = clamp((Math.pow(rawLum, 1.22) * 0.95) + (skinLikely * 0.6), 0, 1);
+          const energyDriven = clamp(energyScore + (exprHeatCurve * 0.62), 0, 1.45);
+          const energyRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 0.92);
+          const glowRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 1.22);
+          const neutralLift = clamp((0.58 - energyScore) / 0.58, 0, 1);
+          const neutralFaceArea = Math.max(containFace, Math.pow(containForehead, 0.72));
+          const neutralSpread = Math.pow(neutralFaceArea, 0.72) * neutralLift;
+
+          warmMix = humanInfluence * heatPotential * (0.28 + (energyRamp * 1.45));
+          warmMix += wholeFace * (0.05 + energyRamp * 0.72);
+          warmMix += edgeSoft * energyRamp * 0.22;
+          warmMix += bodyInfluence * energyRamp * 0.22;
+          warmMix += faceCore * glowRamp * (0.42 + exprHeatCurve * 0.62);
+          warmMix += neutralSpread * 0.1;
+          warmMix += containFace * exprHeatCurve * 0.38;
+          warmMix += faceCore * exprHeatCurve * 0.35;
+          warmMix *= personContain * 0.9;
+          const maxWarmMix = lerp(0.76, 0.9, exprHeatCurve);
+          warmMix = clamp(warmMix, 0, maxWarmMix);
+          thermalBoost = (
+            (faceCore * glowRamp * (0.26 + exprHeatCurve * 0.34)) +
+            (wholeFace * energyRamp * (0.14 + exprHeatCurve * 0.16)) +
+            (bodyInfluence * energyRamp * 0.1) +
+            (neutralSpread * 0.07)
+          ) * personContain;
+          thermalBoost += exprHeatCurve * 0.1 * personContain;
+        }
+
+        const boostedLum = clamp(Math.pow(rawLum, 0.88) + thermalBoost, 0, 1);
+        const lumCap = hasFace ? Math.round(lerp(205, 236, Math.pow(exprHeatCurve, 0.95))) : 210;
+        const lumIndex = Math.min(lumCap, Math.floor(boostedLum * 255));
+        const thermal = activeLUT[lumIndex] || bg;
+
+          let outR = Math.round(lerp(bg.r, thermal.r, warmMix));
+          let outG = Math.round(lerp(bg.g, thermal.g, warmMix));
+          let outB = Math.round(lerp(bg.b, thermal.b, warmMix));
+
+          if (hasFace && warmMix > 0.08 && (exprHeatCurve > 0.5 || (moodDrivenExpression && expressionConfidence > 0.55))) {
+            const exHot = (x - cx) / rx;
+            const eyHot = (y - cy) / ry;
+            const distHot = Math.sqrt((exHot * exHot) + (eyHot * eyHot));
+            const hotRadius = 1.18;
+            if (distHot < hotRadius) {
+              const thermalHotMix = clamp((exprHeatCurve - 0.5) / 0.5, 0, 1);
+              const moodHotMix = moodDrivenExpression ? clamp((expressionConfidence - 0.45) / 0.55, 0, 1) : 0;
+              const hotMix = Math.max(thermalHotMix, moodHotMix);
+              const hotMixShaped = hotMix * hotMix * (3 - (2 * hotMix));
+              const faceHot = Math.pow(clamp(1 - (distHot / hotRadius), 0, 1), 2.15);
+              const amberHot = facePeakColor(currentExpression, hotMixShaped);
+              const hotBlendGain = moodDrivenExpression ? 0.54 : 0.33;
+              const hotBlend = hotMixShaped * faceHot * hotBlendGain;
+              outR = Math.round(lerp(outR, amberHot.r, hotBlend));
+              outG = Math.round(lerp(outG, amberHot.g, hotBlend));
+              outB = Math.round(lerp(outB, amberHot.b, hotBlend));
+            }
+
+            const detailStrength = clamp(exprHeatCurve * 0.52, 0.12, 0.42);
+            const detail = (rawLum - 0.5) * detailStrength * 70;
+            outR = clamp(outR + detail, 0, 255);
+            outG = clamp(outG + detail * 0.88, 0, 255);
+            outB = clamp(outB + detail * 0.42, 0, 255);
+          }
+
+          const adaptiveDeltaFloor = hasFace ? 0.055 : 0.08;
+          const motionHit = clamp((delta - adaptiveDeltaFloor) * 6.2, 0, 1);
+          // Allow non-face movers (hands/background people) when motion is strong.
+          const globalMotionMask = clamp((motionHit - 0.48) * 1.9, 0, 1);
+          const motionSourceMask = hasFace
+            ? Math.max(trailMask, globalMotionMask)
+            : globalMotionMask;
+          const ex = x >> 1;
+          const ey = y >> 1;
+          if (motionHit > 0.22 && motionSourceMask > 0.12 && ex < emberW && ey < emberH) {
+            const ep = ey * emberW + ex;
+            const inject = motionHit * motionSourceMask * 0.26;
+            if (inject > motionEmberTmp[ep]) motionEmberTmp[ep] = inject;
+            const speedInject = clamp((motionHit - 0.22) / 0.7, 0, 1) * motionSourceMask;
+            if (speedInject > motionSpeedEmberTmp[ep]) motionSpeedEmberTmp[ep] = speedInject;
+          }
+
+          const moveHit = clamp((delta - 0.06) * 6.2, 0, 1) * Math.max(0.35, motionSourceMask);
+          if (moveHit > 0.08) {
+            movePixelCount += 1;
+            if (moveHit > frameMotionPeak) frameMotionPeak = moveHit;
+          }
+
+          data[i] = outR;
+          data[i + 1] = outG;
+          data[i + 2] = outB;
+        }
+      }
+
+      blurEmberField(motionEmberTmp, motionEmber, emberW, emberH);
+      blurEmberField(motionEmber, motionEmberTmp, emberW, emberH);
+      blurEmberField(motionEmberTmp, motionEmber, emberW, emberH);
+      blurEmberField(motionEmber, motionEmberTmp, emberW, emberH);
+      blurEmberField(motionEmberTmp, motionEmber, emberW, emberH);
+      blurEmberField(motionSpeedEmberTmp, motionSpeedEmber, emberW, emberH);
+      blurEmberField(motionSpeedEmber, motionSpeedEmberTmp, emberW, emberH);
+      blurEmberField(motionSpeedEmberTmp, motionSpeedEmber, emberW, emberH);
+
+      const emberScaleX = emberW / procW;
+      const emberScaleY = emberH / procH;
+      for (let y = 0; y < procH; y += 1) {
+        for (let x = 0; x < procW; x += 1) {
+          const i = (y * procW + x) * 4;
+          const emberVal = sampleEmberBilinear(
+            motionEmber,
+            emberW,
+            emberH,
+            (x + 0.5) * emberScaleX,
+            (y + 0.5) * emberScaleY
+          );
+          if (emberVal < 0.055) continue;
+          const emberSpeedVal = sampleEmberBilinear(
+            motionSpeedEmber,
+            emberW,
+            emberH,
+            (x + 0.5) * emberScaleX,
+            (y + 0.5) * emberScaleY
+          );
+          let spatialGate = 1;
+          if (hasFace) {
+            const exBody = (x - bodyCx) / (bodyRx * 1.12);
+            const eyBody = (y - bodyCy) / (bodyRy * 1.12);
+            const bodyGate = clamp(1 - Math.sqrt((exBody * exBody) + (eyBody * eyBody)), 0, 1);
+            // Keep trails near person by default, but permit strong off-body movers.
+            const offBodyBoost = clamp((emberVal - 0.08) * 4.2, 0, 1);
+            spatialGate = Math.max(bodyGate, offBodyBoost);
+            if (spatialGate < 0.04) continue;
+          }
+          const emberSoft = Math.pow(emberVal, 0.74);
+          const emberShape = emberSoft * emberSoft * (3 - (2 * emberSoft));
+          const localTrailSpeed = clamp((emberSpeedVal - 0.06) / 0.42, 0, 1);
+          const trail = moodyTrailRgb(emberShape, energyScore, localTrailSpeed);
+          const edgeBlend = clamp((emberVal - 0.055) / 0.14, 0, 1);
+          const speedAlpha = clamp((localTrailSpeed - 0.04) / 0.9, 0.12, 1);
+          const trailMix = clamp(
+            Math.pow(emberShape, 0.92) * (0.12 + localTrailSpeed * 0.36) * spatialGate * edgeBlend * speedAlpha,
+            0,
+            0.5
+          );
+          data[i] = Math.round(lerp(data[i], trail.r, trailMix));
+          data[i + 1] = Math.round(lerp(data[i + 1], trail.g, trailMix));
+          data[i + 2] = Math.round(lerp(data[i + 2], trail.b, trailMix));
+        }
+      }
+
+      offCtx.putImageData(frame, 0, 0);
+      ctx.drawImage(offscreen, 0, 0, displayW, displayH);
+
+      // Live per-frame motion — only pixels that pass a strict delta gate.
+      const movingRatio = movePixelCount / Math.max(1, pixelCount);
+      const spreadBoost = movingRatio > 0.02 ? (movingRatio - 0.02) * 12 : 0;
+      const motionMetricRaw = Math.max(
+        Math.max(0, frameMotionPeak - 0.28) * 2.6,
+        spreadBoost
+      );
+      moveLevel = motionMetricRaw < 0.2 ? 0 : motionMetricRaw;
+      const moveNorm = clamp((moveLevel - 0.25) / 1.05, 0, 1.2);
+      const trailRise = moveNorm > trailHeat ? 0.14 : 0.1;
+      trailHeat = lerp(trailHeat, moveNorm, trailRise);
+      drawDebugOverlay();
+      requestAnimationFrame(renderFrame);
+    }
+
+    async function initWebcam() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+              audio: false
+            });
+        video.srcObject = stream;
+        await video.play();
+      console.log("webcam ready");
+    }
+
+    async function init() {
+      resizeCanvases();
+      window.addEventListener("resize", resizeCanvases);
+      await initWebcam();
+      await loadModels();
+      bgLUT = buildFixedLUTFromPalette(bgPalette);
+      coolLUT = buildFixedLUTFromPalette(coolPalette);
+      hotLUT = buildFixedLUTFromPalette(hotPalette);
+      rebuildActiveLUT(true);
+      await runFaceDetection();
+      startDetectionLoop();
+      requestAnimationFrame(renderFrame);
+    }
+
+    init().catch((error) => {
+      console.error(error);
+    });
+  </script>
+</body>
+</html>
