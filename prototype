@@ -1,0 +1,2901 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>CoreCam</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+  <style>
+    :root {
+      --bg: #141418;
+      --bg-deep: #0c0c0f;
+      --surface: #1e1e24;
+      --surface-raised: #26262e;
+      --ink: #f2f2f4;
+      --ink-muted: #8b8b96;
+      --ink-faint: #5a5a64;
+      --accent: #ff6b2c;
+      --accent-soft: #ff9a62;
+      --accent-glow: rgba(255, 107, 44, 0.5);
+      --ok: #6b9a78;
+      --shadow-dark: rgba(0, 0, 0, 0.55);
+      --shadow-light: rgba(255, 255, 255, 0.04);
+      --inset-dark: rgba(0, 0, 0, 0.5);
+      --inset-light: rgba(255, 255, 255, 0.05);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+      --font: "IBM Plex Mono", "SF Mono", "Consolas", monospace;
+      --neu-raised: 8px 8px 18px var(--shadow-dark), -7px -7px 16px var(--shadow-light);
+      --neu-pressed: inset 6px 6px 14px var(--inset-dark), inset -5px -5px 12px var(--inset-light);
+      --neu-soft: 4px 4px 10px var(--shadow-dark), -3px -3px 9px var(--shadow-light);
+      --rack-col: minmax(150px, 190px);
+      --dial-width: 118px;
+      --dial-height: 272px;
+      --slot-pitch: 58px;
+      --ball-size: 44px;
+      --ball-size-active: 88px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(12px, 2.5vw, 28px);
+      background:
+        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 107, 44, 0.06), transparent 55%),
+        linear-gradient(165deg, var(--bg) 0%, var(--bg-deep) 100%);
+    }
+
+    video { display: none; }
+
+    .instrument {
+      width: min(1180px, 100%);
+      height: min(720px, 100%);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+      padding: 18px 20px 16px;
+      border-radius: calc(var(--radius-lg) + 6px);
+      background: var(--surface);
+      box-shadow: var(--neu-raised);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .instrument-header {
+      display: grid;
+      grid-template-columns: 1fr var(--rack-col);
+      gap: 18px;
+      align-items: center;
+      padding: 4px 6px 2px;
+    }
+
+    .brand-block {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .brand {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .brand-sub {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .header-chips {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .chip {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 999px;
+      text-align: center;
+      font-family: var(--font);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      background: var(--surface);
+      box-shadow: var(--neu-soft);
+      cursor: pointer;
+      transition: color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    }
+
+    .chip:hover:not(:disabled) {
+      color: var(--ink);
+      box-shadow: var(--neu-raised);
+    }
+
+    .chip:active:not(:disabled) {
+      transform: scale(0.97);
+      box-shadow: var(--neu-pressed);
+    }
+
+    .chip:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .chip:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .chip.is-live {
+      color: var(--accent);
+      box-shadow: var(--neu-pressed), 0 0 0 1px rgba(255, 107, 44, 0.18);
+    }
+
+    .chip.is-capturing {
+      color: var(--accent-soft);
+      box-shadow: var(--neu-pressed), 0 0 12px var(--accent-glow);
+    }
+
+    .chip .chip-val {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+
+    .chip.is-live .chip-val,
+    .chip.is-capturing .chip-val { color: var(--accent); }
+
+    .instrument-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .sensor-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .sensor-stack-body {
+      display: grid;
+      grid-template-columns: 1fr var(--rack-col);
+      grid-template-rows: minmax(280px, 1fr) auto;
+      gap: 12px 18px;
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .viewport-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 280px;
+      min-width: 0;
+      height: 100%;
+      align-self: stretch;
+      grid-column: 1;
+      grid-row: 1;
+      overflow: hidden;
+    }
+
+    .viewport-panel .instrument-footer {
+      flex-shrink: 0;
+    }
+
+    .panel-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      padding-left: 4px;
+    }
+
+    .viewport-recess {
+      position: relative;
+      flex: 1 1 0;
+      width: 100%;
+      min-height: 240px;
+      border-radius: var(--radius-md);
+      background: #08080a;
+      box-shadow: var(--neu-pressed);
+      overflow: hidden;
+    }
+
+    .viewport-recess::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 3px,
+          rgba(255, 255, 255, 0.015) 3px,
+          rgba(255, 255, 255, 0.015) 4px
+        );
+    }
+
+    #display {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .vf-reticle {
+      position: absolute;
+      inset: 14px;
+      pointer-events: none;
+      z-index: 3;
+      border: 1px solid rgba(255, 107, 44, 0.2);
+      border-radius: 6px;
+    }
+
+    .vf-reticle::before,
+    .vf-reticle::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: var(--accent-soft);
+      border-style: solid;
+      opacity: 0.7;
+    }
+
+    .vf-reticle::before {
+      top: -1px;
+      left: -1px;
+      border-width: 2px 0 0 2px;
+    }
+
+    .vf-reticle::after {
+      bottom: -1px;
+      right: -1px;
+      border-width: 0 2px 2px 0;
+    }
+
+    .vf-hud {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .vf-hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .vf-transmission {
+      flex: 1;
+      min-width: 0;
+      max-width: min(440px, 70%);
+      margin-right: 10px;
+      font-family: var(--font);
+      font-size: 10px;
+      font-weight: 400;
+      line-height: 1.55;
+      letter-spacing: 0.05em;
+      text-transform: none;
+      color: rgba(236, 228, 216, 0.88);
+      text-shadow:
+        0 0 12px rgba(0, 0, 0, 0.75),
+        0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .vf-transmission-prefix {
+      color: rgba(255, 154, 98, 0.85);
+      letter-spacing: 0.1em;
+    }
+
+    .vf-transmission-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .vf-transmission-cursor {
+      display: inline-block;
+      margin-left: 1px;
+      color: var(--accent-soft);
+      font-weight: 500;
+      animation: transmissionBlink 0.85s step-end infinite;
+    }
+
+    .vf-transmission-cursor.is-done {
+      opacity: 0.35;
+      animation: none;
+    }
+
+    @keyframes transmissionBlink {
+      50% { opacity: 0; }
+    }
+
+    .vf-rec {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(236, 228, 216, 0.7);
+    }
+
+    .vf-rec-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+      animation: recPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes recPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .vf-hud-stats {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      gap: 6px 20px;
+      align-self: flex-end;
+    }
+
+    .vf-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .vf-stat-label {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(236, 228, 216, 0.5);
+    }
+
+    .vf-stat-value {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: rgba(248, 240, 228, 0.92);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .vf-stat-value.is-hot { color: var(--accent-soft); }
+
+    .vf-stat-value.is-core,
+    .readout-value.is-core {
+      color: var(--accent);
+      letter-spacing: 0.2em;
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .vf-stat-value.is-core,
+    .readout-value.is-core {
+      color: var(--accent);
+      letter-spacing: 0.2em;
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .telemetry-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      flex-shrink: 0;
+      grid-column: 1;
+      grid-row: 2;
+      align-self: end;
+    }
+
+      .telemetry-panel .readout-card {
+      padding: 10px 12px;
+    }
+
+    .telemetry-panel .readout-title {
+      margin-bottom: 8px;
+    }
+
+    .memory-rack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-height: 0;
+      height: 100%;
+      align-self: stretch;
+      grid-column: 2;
+      grid-row: 1 / -1;
+      padding: 12px 10px;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--neu-pressed);
+    }
+
+    .memory-rack-label {
+      margin: 0;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .memory-rack-hint {
+      margin: 0;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      text-align: center;
+      line-height: 1.5;
+      max-width: 140px;
+    }
+
+    .memory-rack.empty .memory-rack-hint { display: block; }
+    .memory-rack:not(.empty) .memory-rack-hint { display: none; }
+
+    .memory-dial-wrap {
+      position: relative;
+      width: var(--dial-width);
+      flex: 1 1 0;
+      min-height: 0;
+      align-self: center;
+    }
+
+    .dial-arrow {
+      position: absolute;
+      left: -2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      border-left: 10px solid var(--accent);
+      filter: drop-shadow(0 0 4px var(--accent-glow));
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .memory-track-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: calc(var(--dial-width) / 2);
+      background: var(--bg-deep);
+      box-shadow: var(--neu-pressed);
+      overflow: hidden;
+    }
+
+    .memory-track-frame::before,
+    .memory-track-frame::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 72%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .memory-track-frame::before { top: 18%; }
+    .memory-track-frame::after { bottom: 18%; }
+
+    .memory-dial {
+      position: absolute;
+      inset: 8px 14px;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+      z-index: 3;
+    }
+
+    .memory-dial.is-dragging { cursor: grabbing; }
+
+    .memory-dial-strip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      will-change: transform;
+    }
+
+    .memory-dial-balls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .memory-slot {
+      height: var(--slot-pitch);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .memory-slot::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 50%;
+      height: 1px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07) 20%, rgba(255, 255, 255, 0.07) 80%, transparent);
+      pointer-events: none;
+    }
+
+    .memory-ball {
+      position: relative;
+      width: var(--ball-size);
+      height: var(--ball-size);
+      flex-shrink: 0;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      background: radial-gradient(circle at 35% 28%, rgba(70, 70, 78, 0.95), rgba(40, 40, 48, 0.9) 50%, rgba(24, 24, 30, 0.95) 100%);
+      box-shadow: var(--neu-soft);
+      opacity: 0.72;
+      transition:
+        width 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
+        height 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.25s ease,
+        box-shadow 0.3s ease;
+      pointer-events: none;
+    }
+
+    .memory-ball.is-new {
+      animation: memoryBallPop 0.55s cubic-bezier(0.34, 1.35, 0.64, 1) forwards;
+    }
+
+    @keyframes memoryBallPop {
+      0% { opacity: 0; transform: scale(0.3); }
+      70% { opacity: 1; transform: scale(1.08); }
+      100% { opacity: 0.78; transform: scale(1); }
+    }
+
+    .memory-ball.is-new {
+      animation: memoryBallPop 0.55s cubic-bezier(0.34, 1.35, 0.64, 1) forwards;
+    }
+
+    @keyframes memoryBallPop {
+      0% { opacity: 0; transform: scale(0.3); }
+      70% { opacity: 1; transform: scale(1.08); }
+      100% { opacity: 0.78; transform: scale(1); }
+    }
+
+    .memory-ball.is-selected {
+      width: var(--ball-size-active);
+      height: var(--ball-size-active);
+      opacity: 1;
+      z-index: 3;
+      border-color: rgba(255, 154, 98, 0.65);
+      box-shadow:
+        var(--neu-soft),
+        0 0 0 3px rgba(255, 107, 44, 0.35),
+        0 0 28px var(--accent-glow);
+    }
+
+    .memory-ball img {
+      position: relative;
+      z-index: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .memory-ball.mood-happy::after,
+    .memory-ball.mood-sad::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .memory-ball.mood-happy::after {
+      background: radial-gradient(
+        circle at 42% 36%,
+        rgba(255, 244, 150, 0.78) 0%,
+        rgba(255, 214, 72, 0.52) 38%,
+        rgba(255, 178, 48, 0.28) 62%,
+        transparent 88%
+      );
+      mix-blend-mode: screen;
+    }
+
+    .memory-ball.mood-sad::after {
+      background: radial-gradient(
+        circle at 42% 36%,
+        rgba(186, 248, 255, 0.76) 0%,
+        rgba(96, 210, 248, 0.5) 38%,
+        rgba(48, 140, 220, 0.26) 62%,
+        transparent 88%
+      );
+      mix-blend-mode: screen;
+    }
+
+    .memory-ball.mood-happy.is-selected {
+      border-color: rgba(255, 210, 90, 0.72);
+      box-shadow:
+        var(--neu-soft),
+        0 0 0 3px rgba(255, 190, 60, 0.38),
+        0 0 22px rgba(255, 200, 80, 0.45);
+    }
+
+    .memory-ball.mood-sad.is-selected {
+      border-color: rgba(110, 220, 255, 0.72);
+      box-shadow:
+        var(--neu-soft),
+        0 0 0 3px rgba(72, 190, 255, 0.38),
+        0 0 22px rgba(72, 200, 255, 0.42);
+    }
+
+    .readout-card {
+      padding: 14px 14px 12px;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--neu-raised);
+    }
+
+    .readout-card.is-recessed {
+      box-shadow: var(--neu-pressed);
+      background: linear-gradient(145deg, var(--bg-deep) 0%, var(--surface) 100%);
+    }
+
+    .readout-title {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 12px;
+    }
+
+    .readout-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .readout-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .readout-label {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .readout-value {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+    }
+
+    .readout-value.is-accent { color: var(--accent); }
+
+    .meter-track {
+      margin-top: 4px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--bg-deep);
+      box-shadow: var(--neu-pressed);
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(255, 107, 44, 0.35), var(--accent-soft), var(--accent));
+      box-shadow: 0 0 10px var(--accent-glow);
+      transition: width 0.12s linear;
+    }
+
+    .instrument-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      box-shadow: var(--neu-pressed);
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .footer-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-led {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 6px rgba(107, 154, 120, 0.45);
+    }
+
+    .status-led.is-warn {
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    @media (max-width: 820px) {
+      .instrument {
+        height: min(900px, 100%);
+      }
+      .sensor-stack-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) auto auto;
+      }
+      .viewport-panel {
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .telemetry-panel {
+        grid-column: 1;
+        grid-row: 2;
+      }
+      .memory-rack {
+        grid-column: 1;
+        grid-row: 3;
+        flex-direction: row;
+        justify-content: center;
+        padding: 10px;
+        min-height: 200px;
+      }
+      .memory-dial-wrap {
+        flex: 1 1 auto;
+        width: min(100%, 420px);
+        max-height: 120px;
+      }
+      .memory-track-frame {
+        border-radius: var(--radius-md);
+      }
+      .telemetry-panel {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="instrument">
+    <header class="instrument-header">
+      <div class="brand-block">
+        <div class="brand">CoreCam</div>
+        <div class="brand-sub">Live Energy Camera</div>
+      </div>
+      <div class="header-chips">
+        <button
+          type="button"
+          class="chip chip-capture is-live"
+          id="chipCapture"
+          title="Save a core memory now (or auto-saves at peak joy or sorrow)"
+        >
+          Capture
+          <span class="chip-val" id="chipCaptureVal">LIVE</span>
+        </button>
+        <button
+          type="button"
+          class="chip chip-memories"
+          id="chipMemories"
+          title="Jump to your latest core memory"
+        >
+          Memories
+          <span class="chip-val" id="chipMemoriesVal">0</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="instrument-body">
+      <div class="sensor-stack">
+        <div class="panel-label">Primary Sensor</div>
+        <div class="sensor-stack-body">
+          <section class="viewport-panel">
+            <footer class="instrument-footer">
+              <div class="footer-status">
+                <span class="status-led" id="statusLed"></span>
+                <span id="footerStatus">Initializing sensor…</span>
+              </div>
+              <span id="footerClock">—</span>
+            </footer>
+            <div class="viewport-recess" id="viewport">
+              <canvas id="display"></canvas>
+              <div class="vf-reticle" aria-hidden="true"></div>
+              <div class="vf-hud">
+                <div class="vf-hud-top">
+                  <div
+                    class="vf-transmission"
+                    id="vfTransmission"
+                    aria-label="Hold your absolute best smile! Energy levels are indicated by your facial expression and movement."
+                  >
+                    <span class="vf-transmission-prefix" aria-hidden="true">&gt; </span>
+                    <span class="vf-transmission-text" id="vfTransmissionText"></span>
+                    <span class="vf-transmission-cursor" id="vfTransmissionCursor" aria-hidden="true">▌</span>
+                  </div>
+                  <div class="vf-rec">
+                    <span class="vf-rec-dot"></span>
+                    Live
+                  </div>
+                </div>
+                <div class="vf-hud-stats">
+                  <div class="vf-stat">
+                    <span class="vf-stat-label">Energy</span>
+                    <span class="vf-stat-value" id="hudEnergy">—</span>
+                  </div>
+                  <div class="vf-stat">
+                    <span class="vf-stat-label">Motion</span>
+                    <span class="vf-stat-value" id="hudMotion">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="telemetry-panel" id="telemetry" aria-label="Telemetry statistics">
+            <div class="readout-card">
+              <div class="readout-title">Energy</div>
+              <div class="readout-row">
+                <span class="readout-label">Level</span>
+                <span class="readout-value is-accent" id="telEnergy">—</span>
+              </div>
+              <div class="meter-track"><div class="meter-fill" id="meterEnergy"></div></div>
+            </div>
+            <div class="readout-card">
+              <div class="readout-title">Motion</div>
+              <div class="readout-row">
+                <span class="readout-label">Level</span>
+                <span class="readout-value" id="telMotion">—</span>
+              </div>
+              <div class="meter-track"><div class="meter-fill" id="meterMotion"></div></div>
+            </div>
+            <div class="readout-card">
+              <div class="readout-title">People</div>
+              <div class="readout-row">
+                <span class="readout-label">In frame</span>
+                <span class="readout-value" id="telPeople">0</span>
+              </div>
+            </div>
+            <div class="readout-card">
+              <div class="readout-title">Expression</div>
+              <div class="readout-row">
+                <span class="readout-label">State</span>
+                <span class="readout-value" id="telExpr">—</span>
+              </div>
+            </div>
+          </section>
+
+          <aside class="memory-rack empty" id="memoryRack" aria-label="Core memory bank">
+            <p class="memory-rack-label">Core Memory</p>
+            <div class="memory-dial-wrap">
+              <div class="dial-arrow" aria-hidden="true" title="Selected memory"></div>
+              <div class="memory-track-frame">
+                <div class="memory-dial" id="memoryDial" aria-label="Scroll memories">
+                  <div class="memory-dial-strip" id="memoryDialStrip">
+                    <div class="memory-dial-balls" id="memoryBalls"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="memory-rack-hint" id="memoryRackHint">Peak joy or sorrow captures a memory</p>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <video id="video" autoplay playsinline muted></video>
+
+  <script>
+    let energyScore = 0.12;
+    let faceScore = 0.35;
+    let lastDetection = null;
+    let peopleCount = 0;
+    let targetFaceScore = 0.4;
+    let expressionIntensity = 0;
+    let targetExpressionIntensity = 0;
+    let lastExpressions = null;
+    let moodSadLatch = 0;
+    let moodAngryLatch = 0;
+    let moodExpressionStable = "neutral";
+
+    const canvas = document.getElementById("display");
+    if (!canvas) {
+      throw new Error("Display canvas #display not found");
+    }
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const viewport = document.getElementById("viewport");
+    const hudEnergy = document.getElementById("hudEnergy");
+    const hudMotion = document.getElementById("hudMotion");
+    const telEnergy = document.getElementById("telEnergy");
+    const telPeople = document.getElementById("telPeople");
+    const telExpr = document.getElementById("telExpr");
+    const telMotion = document.getElementById("telMotion");
+    const meterEnergy = document.getElementById("meterEnergy");
+    const meterMotion = document.getElementById("meterMotion");
+    const chipCapture = document.getElementById("chipCapture");
+    const chipCaptureVal = document.getElementById("chipCaptureVal");
+    const chipMemories = document.getElementById("chipMemories");
+    const chipMemoriesVal = document.getElementById("chipMemoriesVal");
+    const footerStatus = document.getElementById("footerStatus");
+    const footerClock = document.getElementById("footerClock");
+    const statusLed = document.getElementById("statusLed");
+    const memoryRack = document.getElementById("memoryRack");
+    const memoryDial = document.getElementById("memoryDial");
+    const memoryDialStrip = document.getElementById("memoryDialStrip");
+    const memoryBalls = document.getElementById("memoryBalls");
+
+    let dialScrollY = 0;
+    let dialDragging = false;
+    let dialPointerId = null;
+    let dialDragStartY = 0;
+    let dialDragStartScroll = 0;
+
+    const GIF_WORKER_URL = "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js";
+    if (typeof GIF !== "undefined") GIF.workerScript = GIF_WORKER_URL;
+    const GIF_OUT_WIDTH = 120;
+    const GIF_OUT_HEIGHT = 90;
+    const GIF_DELAY_MS = 90;
+    const GIF_ENCODE_TIMEOUT_MS = 8000;
+    const CAPTURE_WATCHDOG_MS = 4500;
+    const PRE_BUFFER_MS = 1400;
+    const POST_CAPTURE_MS = 2000;
+    const FRAME_SAMPLE_MS = 100;
+    const MEMORY_COOLDOWN_MS = 5000;
+    const PEAK_SUSTAIN_MS = 400;
+    const PRE_BUFFER_FRAMES = Math.ceil(PRE_BUFFER_MS / FRAME_SAMPLE_MS);
+    const POST_BUFFER_FRAMES = Math.ceil(POST_CAPTURE_MS / FRAME_SAMPLE_MS);
+
+    let frameRing = [];
+    let lastFrameSampleAt = 0;
+    let captureBusy = false;
+    let captureFinalizing = false;
+    let captureBusyFrames = null;
+    let captureEndsAt = 0;
+    let captureDrainTimer = null;
+    let captureWatchdogTimer = null;
+    let peakArmed = true;
+    let wasAtPeak = false;
+    let peakSustainStart = 0;
+    let peakEpisodeCaptured = false;
+    let lastMemoryAt = 0;
+    let pendingCaptureMood = "happy";
+
+    const video = document.getElementById("video");
+    const offscreen = document.createElement("canvas");
+    const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
+
+    let displayW = 0;
+    let displayH = 0;
+    const MAX_PROCESS_WIDTH = 400;
+    const DETECTION_INTERVAL_MS = 160;
+    const UI_UPDATE_EVERY_N_FRAMES = 2;
+    let uiUpdateFrame = 0;
+    let bgLUT = [];
+    let coolLUT = [];
+    let hotLUT = [];
+    let activeLUT = [];
+    let detectionTimer = null;
+    let lutLogged = false;
+    let lastLutEnergy = -1;
+    let lastFaceBox = null;
+    let liveFace = null;
+    let faceDetectVersion = 0;
+    let consumedFaceVersion = -1;
+    let modelsReady = false;
+    let moveLevel = 0;
+    let moveLevelDisplay = 0;
+    let trailHeat = 0;
+    let prevLumaFrame = new Float32Array(0);
+    let motionEmber = new Float32Array(0);
+    let motionEmberTmp = new Float32Array(0);
+    let motionSpeedEmber = new Float32Array(0);
+    let motionSpeedEmberTmp = new Float32Array(0);
+
+    const detectCanvas = document.createElement("canvas");
+    detectCanvas.width = 224;
+    detectCanvas.height = 168;
+    const detectCtx = detectCanvas.getContext("2d", { willReadFrequently: true });
+
+    const expressionScores = {
+      happy: 1.0,
+      surprised: 0.85,
+      neutral: 0.4,
+      fearful: 0.3,
+      angry: 0.2,
+      disgusted: 0.15,
+      sad: 0.1
+    };
+
+    const coolPalette = [
+      { l: 0,   r: 0,   g: 0,   b: 0   },
+      { l: 55,  r: 2,   g: 8,   b: 28  },
+      { l: 95,  r: 8,   g: 22,  b: 52  },
+      { l: 130, r: 32,  g: 8,   b: 90  },
+      { l: 165, r: 104, g: 8,   b: 120 },
+      { l: 200, r: 175, g: 22,  b: 85  },
+      { l: 230, r: 220, g: 80,  b: 20  },
+      { l: 255, r: 255, g: 205, b: 70  }
+    ];
+
+    const hotPalette = [
+      { l: 0,   r: 0,   g: 0,   b: 0   },
+      { l: 55,  r: 2,   g: 10,  b: 24  },
+      { l: 95,  r: 10,  g: 26,  b: 44  },
+      { l: 125, r: 58,  g: 8,   b: 80  },
+      { l: 155, r: 145, g: 12,  b: 95  },
+      { l: 185, r: 215, g: 28,  b: 45  },
+      { l: 210, r: 250, g: 95,  b: 0   },
+      { l: 230, r: 255, g: 165, b: 0   },
+      { l: 245, r: 255, g: 220, b: 40  },
+      { l: 255, r: 255, g: 255, b: 255 }
+    ];
+
+    const bgPalette = [
+      { l: 0,   r: 0,  g: 0,  b: 0  },
+      { l: 90,  r: 0,  g: 8,  b: 20 },
+      { l: 170, r: 2,  g: 22, b: 40 },
+      { l: 255, r: 8,  g: 36, b: 64 }
+    ];
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function blurEmberField(src, dst, w, h) {
+      for (let y = 0; y < h; y += 1) {
+        const row = y * w;
+        const rowUp = y > 0 ? row - w : row;
+        const rowDown = y < h - 1 ? row + w : row;
+        for (let x = 0; x < w; x += 1) {
+          const p = row + x;
+          let sum = src[p] * 0.18;
+          let weight = 0.18;
+          const add = (idx, wgt) => {
+            if (idx >= 0 && idx < w * h) {
+              sum += src[idx] * wgt;
+              weight += wgt;
+            }
+          };
+          add(p - 1, 0.12);
+          add(p + 1, 0.12);
+          add(rowUp + x, 0.12);
+          add(rowDown + x, 0.12);
+          add(rowUp + x - 1, 0.055);
+          add(rowUp + x + 1, 0.055);
+          add(rowDown + x - 1, 0.055);
+          add(rowDown + x + 1, 0.055);
+          if (x > 1) add(p - 2, 0.035);
+          if (x < w - 2) add(p + 2, 0.035);
+          if (y > 1) add(p - w * 2, 0.035);
+          if (y < h - 2) add(p + w * 2, 0.035);
+          dst[p] = sum / weight;
+        }
+      }
+    }
+
+    function sampleEmberBilinear(field, w, h, fx, fy) {
+      const x0 = clamp(Math.floor(fx), 0, w - 1);
+      const y0 = clamp(Math.floor(fy), 0, h - 1);
+      const x1 = clamp(x0 + 1, 0, w - 1);
+      const y1 = clamp(y0 + 1, 0, h - 1);
+      const tx = fx - x0;
+      const ty = fy - y0;
+      const i00 = field[y0 * w + x0];
+      const i10 = field[y0 * w + x1];
+      const i01 = field[y1 * w + x0];
+      const i11 = field[y1 * w + x1];
+      const top = lerp(i00, i10, tx);
+      const bot = lerp(i01, i11, tx);
+      return lerp(top, bot, ty);
+    }
+
+    function moodyTrailRgb(intensity, energy, speedBoost) {
+      const local = clamp(intensity, 0, 1);
+      const speed = clamp(speedBoost, 0, 1);
+      const emotionalWarmth = clamp(energy * 0.05, 0, 0.08);
+      // Prioritize per-region speed so trail hue varies by local movement velocity.
+      const motionHeat = clamp((local * 0.34) + (speed * 0.98) + emotionalWarmth, 0, 1.12);
+
+      // Slow movement: subtle purple.
+      if (motionHeat < 0.3) {
+        const u = motionHeat / 0.3;
+        return {
+          r: Math.round(lerp(34, 86, u)),
+          g: Math.round(lerp(6, 14, u)),
+          b: Math.round(lerp(146, 138, u))
+        };
+      }
+      // Medium: purple -> magenta/pink.
+      if (motionHeat < 0.55) {
+        const u = (motionHeat - 0.3) / 0.25;
+        return {
+          r: Math.round(lerp(86, 206, u)),
+          g: Math.round(lerp(14, 22, u)),
+          b: Math.round(lerp(138, 106, u))
+        };
+      }
+      // Fast: magenta/pink -> orange.
+      if (motionHeat < 0.82) {
+        const u = (motionHeat - 0.55) / 0.27;
+        return {
+          r: Math.round(lerp(206, 255, u)),
+          g: Math.round(lerp(22, 126, u)),
+          b: Math.round(lerp(106, 18, u))
+        };
+      }
+      // Very fast: orange -> yellow/amber (still no white trails).
+      const u = (motionHeat - 0.82) / 0.33;
+      return {
+        r: 255,
+        g: Math.round(lerp(126, 245, u)),
+        b: Math.round(lerp(18, 12, u))
+      };
+    }
+
+    function facePeakColor(expression, heatMix) {
+      const t = clamp(heatMix, 0, 1);
+      if (expression === "sad") {
+        // Sad mode peaks in cyan instead of yellow.
+        return {
+          r: Math.round(lerp(58, 118, t)),
+          g: Math.round(lerp(186, 246, t)),
+          b: Math.round(lerp(212, 255, t))
+        };
+      }
+      if (expression === "angry") {
+        // Angry mode peaks in red.
+        return {
+          r: 255,
+          g: Math.round(lerp(72, 26, t)),
+          b: Math.round(lerp(48, 16, t))
+        };
+      }
+      return {
+        r: 255,
+        g: Math.round(lerp(200, 238, t)),
+        b: Math.round(lerp(55, 115, t))
+      };
+    }
+
+    function samplePalette(palette, luminance) {
+      const value = clamp(luminance, 0, 255);
+      for (let i = 0; i < palette.length - 1; i += 1) {
+        const a = palette[i];
+        const b = palette[i + 1];
+        if (value >= a.l && value <= b.l) {
+          const t = (value - a.l) / (b.l - a.l || 1);
+      return {
+            r: Math.round(lerp(a.r, b.r, t)),
+            g: Math.round(lerp(a.g, b.g, t)),
+            b: Math.round(lerp(a.b, b.b, t))
+          };
+        }
+      }
+      const tail = palette[palette.length - 1];
+      return { r: tail.r, g: tail.g, b: tail.b };
+    }
+
+    function buildFixedLUTFromPalette(palette) {
+      const lut = new Array(256);
+      for (let i = 0; i < 256; i += 1) {
+        lut[i] = samplePalette(palette, i);
+      }
+      return lut;
+    }
+
+    function ensureThermalLUTs() {
+      if (!bgLUT.length) bgLUT = buildFixedLUTFromPalette(bgPalette);
+      if (!coolLUT.length) coolLUT = buildFixedLUTFromPalette(coolPalette);
+      if (!hotLUT.length) hotLUT = buildFixedLUTFromPalette(hotPalette);
+      if (!activeLUT.length) rebuildActiveLUT(true);
+    }
+
+    function rebuildActiveLUT(force = false) {
+      if (!coolLUT.length || !hotLUT.length) ensureThermalLUTs();
+      if (!force && Math.abs(energyScore - lastLutEnergy) <= 0.012) return;
+      const lut = new Array(256);
+      for (let i = 0; i < 256; i += 1) {
+        const coolColor = coolLUT[i];
+        const hotColor = hotLUT[i];
+        lut[i] = {
+          r: Math.round(coolColor.r + (hotColor.r - coolColor.r) * energyScore),
+          g: Math.round(coolColor.g + (hotColor.g - coolColor.g) * energyScore),
+          b: Math.round(coolColor.b + (hotColor.b - coolColor.b) * energyScore)
+        };
+      }
+      activeLUT = lut;
+      lastLutEnergy = energyScore;
+      if (!lutLogged) {
+        console.log("LUT ready");
+        lutLogged = true;
+      }
+    }
+
+    function getCoverTransform(targetW, targetH) {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) return null;
+      const scale = Math.max(targetW / vw, targetH / vh);
+      return {
+        scale,
+        dx: (targetW - (vw * scale)) / 2,
+        dy: (targetH - (vh * scale)) / 2
+      };
+    }
+
+    function mapDetectBoxToTarget(box, targetW, targetH) {
+      if (!box) return null;
+      const detectTransform = getCoverTransform(detectCanvas.width, detectCanvas.height);
+      const targetTransform = getCoverTransform(targetW, targetH);
+      if (!detectTransform || !targetTransform) return null;
+
+      const srcX = (box.x - detectTransform.dx) / detectTransform.scale;
+      const srcY = (box.y - detectTransform.dy) / detectTransform.scale;
+      const srcW = box.width / detectTransform.scale;
+      const srcH = box.height / detectTransform.scale;
+
+      return {
+        x: srcX * targetTransform.scale + targetTransform.dx,
+        y: srcY * targetTransform.scale + targetTransform.dy,
+        width: srcW * targetTransform.scale,
+        height: srcH * targetTransform.scale
+      };
+    }
+
+    let canvasDpr = 1;
+
+    function resizeCanvases() {
+      if (!viewport) return;
+
+      let w = Math.floor(viewport.clientWidth || 0);
+      let h = Math.floor(viewport.clientHeight || 0);
+      if (w < 16 || h < 16) {
+        const rect = viewport.getBoundingClientRect();
+        w = Math.max(w, Math.floor(rect.width || 0));
+        h = Math.max(h, Math.floor(rect.height || 0));
+      }
+      if (w < 16 || h < 16) {
+        const panel = viewport.parentElement?.getBoundingClientRect();
+        w = Math.max(w, Math.floor(panel?.width || 0), 480);
+        h = Math.max(h, Math.floor(panel?.height || 0), 360);
+        viewport.style.minHeight = `${h}px`;
+      }
+
+      displayW = Math.max(16, w);
+      displayH = Math.max(16, h);
+      canvasDpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      canvas.width = Math.max(1, Math.floor(displayW * canvasDpr));
+      canvas.height = Math.max(1, Math.floor(displayH * canvasDpr));
+      canvas.style.width = `${displayW}px`;
+      canvas.style.height = `${displayH}px`;
+      ctx.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+
+      const procW = Math.max(240, Math.min(MAX_PROCESS_WIDTH, displayW));
+      const procH = Math.max(1, Math.round((procW / displayW) * displayH));
+      offscreen.width = procW;
+      offscreen.height = procH;
+
+      if (!resizeCanvases.logged && displayW >= 16) {
+        console.log("viewfinder size", displayW, "x", displayH, "@", canvasDpr.toFixed(1), "dpr");
+        resizeCanvases.logged = true;
+      }
+    }
+
+    function drawMirroredVideoCover(ctx2d, targetW, targetH, clear = true) {
+      const transform = getCoverTransform(targetW, targetH);
+      if (!transform) {
+        ctx2d.fillStyle = "#12141a";
+        ctx2d.fillRect(0, 0, targetW, targetH);
+        return false;
+      }
+      if (clear) ctx2d.clearRect(0, 0, targetW, targetH);
+      const drawW = video.videoWidth * transform.scale;
+      const drawH = video.videoHeight * transform.scale;
+      ctx2d.save();
+      ctx2d.translate(targetW, 0);
+      ctx2d.scale(-1, 1);
+      ctx2d.drawImage(video, transform.dx, transform.dy, drawW, drawH);
+      ctx2d.restore();
+      return true;
+    }
+
+    function drawVideoCover() {
+      return drawMirroredVideoCover(offCtx, offscreen.width, offscreen.height, false);
+    }
+
+    function drawVideoCoverTo(ctx2d, targetW, targetH) {
+      return drawMirroredVideoCover(ctx2d, targetW, targetH, true);
+    }
+
+    function isEmotionallyNeutral(expressions) {
+      if (!expressions) return true;
+      const neutral = expressions.neutral || 0;
+      const happy = expressions.happy || 0;
+      const sad = expressions.sad || 0;
+      const surprised = expressions.surprised || 0;
+      const angry = expressions.angry || 0;
+      const fearful = expressions.fearful || 0;
+      const disgusted = expressions.disgusted || 0;
+      const emotionPeak = Math.max(happy, sad, surprised, angry, fearful, disgusted);
+      if (neutral >= 0.45 && neutral >= emotionPeak + 0.05) return true;
+      if (neutral >= 0.38 && neutral >= emotionPeak - 0.02) return true;
+      if (emotionPeak < 0.28) return true;
+      if (emotionPeak < 0.38 && neutral >= 0.3) return true;
+      return false;
+    }
+
+    function computePositiveIntensity(expressions) {
+      const happy = expressions.happy || 0;
+      const surprised = expressions.surprised || 0;
+      const neutral = expressions.neutral || 0;
+      const sad = expressions.sad || 0;
+      const angry = expressions.angry || 0;
+      if (isEmotionallyNeutral(expressions)) return 0;
+      if (happy < 0.42 && surprised < 0.4) return 0;
+      if (neutral > 0.36 && happy < 0.52 && surprised < 0.46) return 0;
+      const positiveSignal = (happy * 1.22) + (surprised * 0.88);
+      const dampen = (neutral * 0.58) + (sad * 0.12) + (angry * 0.08);
+      const raw = positiveSignal - dampen;
+      if (raw < 0.22) return 0;
+      return clamp(Math.pow(clamp(raw, 0, 1) / 0.98, 0.78), 0, 1);
+    }
+
+    function computeSadIntensity(expressions) {
+      const sad = expressions.sad || 0;
+      const fearful = expressions.fearful || 0;
+      const neutral = expressions.neutral || 0;
+      const happy = expressions.happy || 0;
+      const angry = expressions.angry || 0;
+      if (isEmotionallyNeutral(expressions)) return 0;
+      if (sad < 0.44 && fearful < 0.4) return 0;
+      if (neutral > 0.36 && sad < 0.5 && fearful < 0.44) return 0;
+      const sadSignal = (sad * 1.38) + (fearful * 0.48);
+      const dampen = (neutral * 0.56) + (happy * 0.16) + (angry * 0.1);
+      const raw = sadSignal - dampen;
+      if (raw < 0.22) return 0;
+      return clamp(Math.pow(clamp(raw, 0, 1) / 0.96, 0.72), 0, 1);
+    }
+
+    function computeExpressionIntensity(expressions) {
+      if (isEmotionallyNeutral(expressions)) return 0;
+      const positive = computePositiveIntensity(expressions);
+      const sad = computeSadIntensity(expressions);
+      const sadRaw = expressions.sad || 0;
+      const neutral = expressions.neutral || 0;
+      const useSadPath = moodExpressionStable === "sad"
+        && sadRaw > 0.32
+        && sadRaw > neutral - 0.05;
+      return useSadPath ? Math.max(sad, positive * 0.08) : Math.max(positive, sad * 0.08);
+    }
+
+    function getLiveExpression(expressions) {
+      if (isEmotionallyNeutral(expressions)) {
+        return { name: "neutral", score: expressions.neutral || 0.5 };
+      }
+      let bestName = "neutral";
+      let bestScore = 0;
+      const neutralScore = expressions.neutral || 0;
+      for (const [name, score] of Object.entries(expressions)) {
+        if (score > bestScore) {
+          bestName = name;
+          bestScore = score;
+        }
+      }
+      if (
+        bestName !== "neutral" &&
+        neutralScore > bestScore - 0.07 &&
+        neutralScore > 0.32
+      ) {
+        bestName = "neutral";
+        bestScore = neutralScore;
+      }
+      if (bestScore < 0.38) {
+        bestName = "neutral";
+        bestScore = Math.max(neutralScore, bestScore);
+      }
+      return { name: bestName, score: bestScore };
+    }
+
+    function updateMoodState(expressions) {
+      const sadRaw = clamp(expressions?.sad || 0, 0, 1);
+      const angryRaw = clamp(expressions?.angry || 0, 0, 1);
+      const neutralRaw = clamp(expressions?.neutral || 0, 0, 1);
+
+      const sadTarget = sadRaw > 0.24 ? sadRaw : 0;
+      const angryTarget = angryRaw > 0.32 ? angryRaw : 0;
+
+      moodSadLatch = lerp(moodSadLatch, sadTarget, sadTarget > moodSadLatch ? 0.34 : 0.06);
+      moodAngryLatch = lerp(moodAngryLatch, angryTarget, angryTarget > moodAngryLatch ? 0.28 : 0.06);
+
+      if (neutralRaw > 0.42 && neutralRaw > sadRaw + 0.1 && neutralRaw > angryRaw + 0.08) {
+        moodSadLatch = lerp(moodSadLatch, 0, 0.28);
+        moodAngryLatch = lerp(moodAngryLatch, 0, 0.24);
+        if (moodSadLatch < 0.28 && moodAngryLatch < 0.28) moodExpressionStable = "neutral";
+      }
+
+      if (moodExpressionStable === "sad") {
+        if (moodSadLatch < 0.2 && moodAngryLatch > 0.48) moodExpressionStable = "angry";
+        else if (moodSadLatch < 0.16) moodExpressionStable = "neutral";
+      } else if (moodExpressionStable === "angry") {
+        if (moodAngryLatch < 0.2 && moodSadLatch > 0.48) moodExpressionStable = "sad";
+        else if (moodAngryLatch < 0.16) moodExpressionStable = "neutral";
+      } else {
+        if (moodSadLatch > 0.48 && moodSadLatch > moodAngryLatch + 0.08 && sadRaw > 0.34 && sadRaw > neutralRaw - 0.06) {
+          moodExpressionStable = "sad";
+        } else if (moodAngryLatch > 0.52 && moodAngryLatch > moodSadLatch + 0.08) {
+          moodExpressionStable = "angry";
+        }
+      }
+    }
+
+    function updateLiveEnergy() {
+      const isSad = moodExpressionStable === "sad";
+      const isNeutral = isEmotionallyNeutral(lastExpressions)
+        || lastDetection?.expression === "neutral";
+      const intensityTarget = isNeutral ? 0 : targetExpressionIntensity;
+      const intLerp = intensityTarget > expressionIntensity
+        ? (isSad ? 0.3 : 0.24)
+        : (isNeutral ? 0.4 : 0.24);
+      expressionIntensity = lerp(expressionIntensity, intensityTarget, intLerp);
+      if (isNeutral) expressionIntensity = Math.min(expressionIntensity, 0.04);
+      const faceLerp = targetFaceScore > faceScore ? 0.28 : 0.1;
+      faceScore = lerp(faceScore, targetFaceScore, faceLerp);
+      const curvePow = isSad ? 0.72 : 0.78;
+      const emotionCurve = Math.pow(clamp(expressionIntensity, 0, 1), curvePow);
+      const expressionEnergy = lerp(0.03, 1.0, emotionCurve);
+      const nextEnergy = clamp(expressionEnergy, 0, 1);
+      const energyLerp = isNeutral
+        ? 0.36
+        : (nextEnergy > energyScore ? (isSad ? 0.3 : 0.26) : 0.22);
+      energyScore = lerp(energyScore, nextEnergy, energyLerp);
+      if (isNeutral) energyScore = Math.min(energyScore, 0.22);
+      rebuildActiveLUT();
+    }
+
+    function moveTowards(value, target, step) {
+      if (value < target) return Math.min(value + step, target);
+      if (value > target) return Math.max(value - step, target);
+      return value;
+    }
+
+    function updateClockHands() {
+      if (!footerClock) return;
+      const now = new Date();
+      footerClock.textContent = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+    }
+
+    function getEnergyDisplayPercent() {
+      return Math.round(clamp(energyScore, 0, 1) * 100);
+    }
+
+    function hasStrongEmotionSignal(expressions) {
+      if (!expressions || isEmotionallyNeutral(expressions)) return false;
+      const happy = expressions.happy || 0;
+      const surprised = expressions.surprised || 0;
+      const sad = expressions.sad || 0;
+      const fearful = expressions.fearful || 0;
+      const neutral = expressions.neutral || 0;
+      if (moodExpressionStable === "sad") {
+        return sad >= 0.44 && sad > happy + 0.08 && sad > neutral - 0.04;
+      }
+      const peakPositive = Math.max(happy, surprised);
+      return peakPositive >= 0.4 && peakPositive > neutral + 0.06;
+    }
+
+    function isAtPeakEnergy() {
+      if (peopleCount === 0 && !lastFaceBox) return false;
+      if (!lastExpressions || isEmotionallyNeutral(lastExpressions)) return false;
+      if (!lastDetection || lastDetection.expression === "neutral") return false;
+      if (expressionIntensity < 0.78) return false;
+      if (!hasStrongEmotionSignal(lastExpressions)) return false;
+      if (getEnergyDisplayPercent() < 85) return false;
+
+      const happy = lastExpressions.happy || 0;
+      const sad = lastExpressions.sad || 0;
+      const surprised = lastExpressions.surprised || 0;
+      const neutral = lastExpressions.neutral || 0;
+
+      if (moodExpressionStable === "sad") {
+        return sad >= 0.4
+          && sad > happy + 0.06
+          && moodSadLatch >= 0.52;
+      }
+
+      const peakPositive = Math.max(happy, surprised);
+      return peakPositive >= 0.42
+        && peakPositive > neutral + 0.06
+        && (happy >= 0.38 || surprised >= 0.36);
+    }
+
+    function getCaptureMood() {
+      if (moodExpressionStable === "sad") return "sad";
+      const ex = lastExpressions;
+      if (ex) {
+        const sadI = computeSadIntensity(ex);
+        const happyI = computePositiveIntensity(ex);
+        if (sadI > happyI + 0.06) return "sad";
+      }
+      if (moodSadLatch >= 0.52 && moodSadLatch > moodAngryLatch + 0.05) return "sad";
+      return "happy";
+    }
+
+    function applyBallMood(ball, mood) {
+      if (!ball) return;
+      const resolved = mood === "sad" ? "sad" : "happy";
+      ball.classList.remove("mood-happy", "mood-sad");
+      ball.classList.add(resolved === "sad" ? "mood-sad" : "mood-happy");
+      ball.dataset.captureMood = resolved;
+    }
+
+    function updateInstrumentUI() {
+      const hasFace = Boolean(lastDetection);
+      const energyPct = getEnergyDisplayPercent();
+      const atCore = energyPct >= 100;
+      const energyLabel = atCore ? "CORE" : `${energyPct}%`;
+      const motionPct = Math.round(clamp(moveLevelDisplay, 0, 1) * 100);
+      const exprName = hasFace ? lastDetection.expression.toUpperCase() : "NONE";
+      const energyHot = energyPct >= 68 && !atCore;
+
+      if (hudEnergy) {
+        hudEnergy.textContent = energyLabel;
+        hudEnergy.classList.toggle("is-hot", energyHot);
+        hudEnergy.classList.toggle("is-core", atCore);
+      }
+      if (hudMotion) hudMotion.textContent = `${motionPct}%`;
+      if (telEnergy) {
+        telEnergy.textContent = energyLabel;
+        telEnergy.classList.toggle("is-core", atCore);
+        telEnergy.classList.toggle("is-accent", !atCore);
+      }
+      if (telPeople) telPeople.textContent = String(peopleCount);
+      if (telExpr) {
+        telExpr.textContent = hasFace
+          ? `${exprName} · ${lastDetection.probability.toFixed(2)}`
+          : "—";
+      }
+      if (telMotion) telMotion.textContent = `${motionPct}%`;
+      if (meterEnergy) meterEnergy.style.width = atCore ? "100%" : `${energyPct}%`;
+      if (meterMotion) meterMotion.style.width = `${motionPct}%`;
+
+      const memoryCount = getDialBallCount();
+      const capturing = captureBusy || captureFinalizing;
+
+      if (chipCaptureVal) {
+        chipCaptureVal.textContent = capturing ? "REC" : (atCore ? "CORE" : "LIVE");
+      }
+      if (chipCapture) {
+        chipCapture.disabled = capturing;
+        chipCapture.classList.toggle("is-live", atCore && !capturing);
+        chipCapture.classList.toggle("is-capturing", capturing);
+        chipCapture.title = capturing
+          ? "Recording core memory…"
+          : "Click to save a core memory now";
+      }
+      if (chipMemoriesVal) chipMemoriesVal.textContent = String(memoryCount);
+      if (chipMemories) {
+        chipMemories.disabled = memoryCount === 0;
+        chipMemories.title = memoryCount
+          ? `View memories (${memoryCount}) — click for latest`
+          : "No core memories yet — peak joy or sorrow";
+      }
+
+      if (statusLed) statusLed.classList.toggle("is-warn", !modelsReady || peopleCount === 0);
+    }
+
+    function cloneCanvasSource(source) {
+      if (!source?.width || !source?.height) {
+        const fallback = document.createElement("canvas");
+        fallback.width = 2;
+        fallback.height = 2;
+        return fallback;
+      }
+      const copy = document.createElement("canvas");
+      copy.width = source.width;
+      copy.height = source.height;
+      copy.getContext("2d").drawImage(source, 0, 0);
+      return copy;
+    }
+
+    function cloneFrameCanvas() {
+      return cloneCanvasSource(offscreen);
+    }
+
+    function pushFrameSample(now) {
+      if (now - lastFrameSampleAt < FRAME_SAMPLE_MS) return;
+      if (offscreen.width < 1 || offscreen.height < 1) return;
+      lastFrameSampleAt = now;
+      try {
+        frameRing.push(cloneFrameCanvas());
+        const ringMax = PRE_BUFFER_FRAMES + POST_BUFFER_FRAMES + 6;
+        while (frameRing.length > ringMax) frameRing.shift();
+      } catch (error) {
+        console.warn("Frame ring sample failed", error);
+      }
+    }
+
+    function prepareGifFrames(frames) {
+      const maxFrames = 16;
+      const step = frames.length > maxFrames ? Math.ceil(frames.length / maxFrames) : 1;
+      const out = [];
+      for (let i = 0; i < frames.length; i += step) {
+        const source = frames[i];
+        if (!source?.width || !source?.height) continue;
+        const canvas = document.createElement("canvas");
+        canvas.width = GIF_OUT_WIDTH;
+        canvas.height = GIF_OUT_HEIGHT;
+        canvas.getContext("2d").drawImage(source, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
+        out.push(canvas);
+      }
+      if (!out.length) {
+        const fallback = cloneFrameCanvas();
+        const canvas = document.createElement("canvas");
+        canvas.width = GIF_OUT_WIDTH;
+        canvas.height = GIF_OUT_HEIGHT;
+        canvas.getContext("2d").drawImage(fallback, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
+        out.push(canvas);
+      }
+      if (out.length === 1) {
+        const dup = document.createElement("canvas");
+        dup.width = GIF_OUT_WIDTH;
+        dup.height = GIF_OUT_HEIGHT;
+        dup.getContext("2d").drawImage(out[0], 0, 0);
+        out.push(dup);
+      }
+      return out;
+    }
+
+    function frameToPreviewUrl(frame) {
+      try {
+        if (!frame?.width || !frame?.height) return null;
+        const out = document.createElement("canvas");
+        out.width = GIF_OUT_WIDTH;
+        out.height = GIF_OUT_HEIGHT;
+        out.getContext("2d").drawImage(frame, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
+        return out.toDataURL("image/jpeg", 0.88);
+      } catch {
+        return null;
+      }
+    }
+
+    function previewFromFrames(frames) {
+      if (!frames?.length) return null;
+      return (
+        frameToPreviewUrl(frames[frames.length - 1]) ||
+        frameToPreviewUrl(frames[Math.floor(frames.length / 2)]) ||
+        frameToPreviewUrl(frames[0])
+      );
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("Failed to read GIF blob"));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function isAnimatedGifUrl(url) {
+      return typeof url === "string"
+        && (url.startsWith("data:image/gif") || url.startsWith("blob:"));
+    }
+
+    function revokeBallGifUrl(ball) {
+      const prev = ball?.dataset?.gifUrl;
+      if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+    }
+
+    function attachBallCaptureFrames(ball, frames) {
+      if (!ball || !frames?.length) return;
+      ball._captureFrames = frames.map((frame) => cloneCanvasSource(frame));
+      ball._framePreviewUrls = null;
+    }
+
+    function getFramePreviewCache(ball) {
+      if (!ball?._captureFrames?.length) return [];
+      if (ball._framePreviewUrls?.length) return ball._framePreviewUrls;
+      ball._framePreviewUrls = ball._captureFrames
+        .map((frame) => frameToPreviewUrl(frame))
+        .filter(Boolean);
+      return ball._framePreviewUrls;
+    }
+
+    function stopBallFrameLoop(ball) {
+      if (!ball) return;
+      if (ball._frameAnimTimer) {
+        clearTimeout(ball._frameAnimTimer);
+        ball._frameAnimTimer = null;
+      }
+    }
+
+    function playBallFrameLoop(ball) {
+      const img = ball?.querySelector("img");
+      const urls = getFramePreviewCache(ball);
+      if (!img || urls.length < 2) {
+        if (img && urls[0]) img.src = urls[0];
+        return;
+      }
+      stopBallFrameLoop(ball);
+      let frameIndex = 0;
+      const step = () => {
+        if (!ball.classList.contains("is-selected")) return;
+        img.src = urls[frameIndex % urls.length];
+        frameIndex += 1;
+        ball._frameAnimTimer = setTimeout(step, GIF_DELAY_MS);
+      };
+      step();
+    }
+
+    function buildGifFromFrames(frames) {
+      return new Promise((resolve, reject) => {
+        if (!frames.length) {
+          reject(new Error("No frames to encode"));
+          return;
+        }
+        if (typeof GIF === "undefined") {
+          reject(new Error("GIF encoder unavailable"));
+          return;
+        }
+        const gifFrames = prepareGifFrames(frames);
+        const encode = (workers) => new Promise((res, rej) => {
+          const gif = new GIF({
+            workers,
+            quality: 12,
+            workerScript: workers > 0 ? GIF_WORKER_URL : undefined,
+            width: GIF_OUT_WIDTH,
+            height: GIF_OUT_HEIGHT,
+            repeat: 0
+          });
+          gifFrames.forEach((frame) => {
+            gif.addFrame(frame, { copy: true, delay: GIF_DELAY_MS });
+          });
+          gif.on("finished", (blob) => {
+            if (!blob || blob.size < 100) {
+              rej(new Error("GIF blob empty"));
+              return;
+            }
+            const typed = blob.type === "image/gif" ? blob : new Blob([blob], { type: "image/gif" });
+            res(URL.createObjectURL(typed));
+          });
+          gif.on("error", (error) => rej(error || new Error("GIF render failed")));
+          gif.render();
+        });
+        encode(0).catch(() => encode(2)).then(resolve).catch(reject);
+      });
+    }
+
+    function stopCaptureTimers() {
+      if (captureDrainTimer) {
+        clearInterval(captureDrainTimer);
+        captureDrainTimer = null;
+      }
+      if (captureWatchdogTimer) {
+        clearTimeout(captureWatchdogTimer);
+        captureWatchdogTimer = null;
+      }
+    }
+
+    function finishCapture() {
+      captureBusy = false;
+      captureFinalizing = false;
+      captureEndsAt = 0;
+      captureBusyFrames = null;
+      peakArmed = true;
+      wasAtPeak = false;
+      peakSustainStart = 0;
+      peakEpisodeCaptured = false;
+    }
+
+    function tickPeakCapture() {
+      const atPeak = isAtPeakEnergy();
+      const now = performance.now();
+
+      if (captureBusy || captureFinalizing) {
+        wasAtPeak = atPeak;
+        return;
+      }
+      if (!peakArmed) {
+        wasAtPeak = atPeak;
+        peakSustainStart = 0;
+        peakEpisodeCaptured = false;
+        return;
+      }
+
+      if (atPeak) {
+        if (!peakSustainStart) peakSustainStart = now;
+        const sustained = now - peakSustainStart >= PEAK_SUSTAIN_MS;
+        if (sustained && !peakEpisodeCaptured) {
+          peakEpisodeCaptured = true;
+          queuePeakMemoryCapture();
+        }
+        wasAtPeak = sustained;
+      } else {
+        peakSustainStart = 0;
+        peakEpisodeCaptured = false;
+        wasAtPeak = false;
+      }
+    }
+
+    function drainCaptureFrame() {
+      try {
+        const now = performance.now();
+        pushFrameSample(now);
+        if (!captureBusy || !captureBusyFrames) return;
+        captureBusyFrames.push(cloneFrameCanvas());
+        if (now < captureEndsAt) return;
+        stopCaptureTimers();
+        const frames = captureBusyFrames;
+        captureBusyFrames = null;
+        finalizeMemoryCapture(frames).catch((error) => {
+          console.error("finalizeMemoryCapture failed", error);
+          finishCapture();
+        });
+      } catch (error) {
+        console.error("drainCaptureFrame failed", error);
+        stopCaptureTimers();
+        finalizeMemoryCapture(captureBusyFrames || [cloneFrameCanvas()]).catch(() => {
+          finishCapture();
+        });
+      }
+    }
+
+    function updateBallMedia(ball, mediaUrl, posterUrl) {
+      if (!ball || !mediaUrl) return;
+      const poster = posterUrl || mediaUrl;
+      const isGif = isAnimatedGifUrl(mediaUrl);
+      revokeBallGifUrl(ball);
+      ball.dataset.gifUrl = isGif ? mediaUrl : "";
+      ball.dataset.posterUrl = poster;
+      ball.dataset.animated = isGif ? "1" : "0";
+      ball.dataset.gifReady = "0";
+      const img = ball.querySelector("img");
+      if (!img) return;
+      img.dataset.playing = "0";
+      img.removeAttribute("data-active-src");
+      if (!ball.classList.contains("is-selected") || !isGif) img.src = poster;
+    }
+
+    async function upgradeBallToGif(ball, frames, preview) {
+      if (!ball) return;
+      ball.dataset.gifEncoding = "1";
+      try {
+        const encoded = await Promise.race([
+          buildGifFromFrames(frames),
+          new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("GIF encode timeout")), GIF_ENCODE_TIMEOUT_MS);
+          })
+        ]);
+        if (!isAnimatedGifUrl(encoded)) return;
+        updateBallMedia(ball, encoded, preview);
+        ball.dataset.gifReady = "1";
+        if (ball.classList.contains("is-selected")) playBallMemory(ball);
+      } catch (error) {
+        console.warn("GIF encode failed; using frame playback", error);
+        if (ball.classList.contains("is-selected")) playBallMemory(ball);
+      } finally {
+        delete ball.dataset.gifEncoding;
+      }
+    }
+
+    async function finalizeMemoryCapture(frames) {
+      if (captureFinalizing) {
+        console.warn("finalizeMemoryCapture skipped — already finalizing");
+        return;
+      }
+      captureFinalizing = true;
+      stopCaptureTimers();
+      try {
+        const safeFrames = Array.isArray(frames) && frames.length ? frames : [cloneFrameCanvas()];
+        const preview = previewFromFrames(safeFrames) || frameToPreviewUrl(safeFrames[safeFrames.length - 1]);
+        const ball = addCoreMemoryBall(preview, preview, pendingCaptureMood, safeFrames);
+        if (!ball) throw new Error("Failed to add core memory ball");
+        if (footerStatus) footerStatus.textContent = "Core memory captured";
+        finishCapture();
+        upgradeBallToGif(ball, safeFrames, preview || ball.dataset.posterUrl);
+      } catch (error) {
+        console.error("finalizeMemoryCapture failed", error);
+        if (footerStatus) footerStatus.textContent = "Capture failed — try again";
+        finishCapture();
+      }
+    }
+
+    function queuePeakMemoryCapture(force = false) {
+      if (captureBusy || captureFinalizing) return;
+      if (video.readyState < 2 || offscreen.width < 1) return;
+      const now = performance.now();
+      if (!force && now - lastMemoryAt < MEMORY_COOLDOWN_MS) return;
+      if (!force && isEmotionallyNeutral(lastExpressions)) return;
+      if (!force && (!lastDetection || lastDetection.expression === "neutral")) return;
+      if (!force && !isAtPeakEnergy()) return;
+      captureBusy = true;
+      peakArmed = false;
+      lastMemoryAt = now;
+      pendingCaptureMood = getCaptureMood();
+      captureEndsAt = now + POST_CAPTURE_MS;
+      if (footerStatus) footerStatus.textContent = "Capturing core memory…";
+
+      const frames = frameRing.slice(-PRE_BUFFER_FRAMES).map((c) => {
+        const copy = document.createElement("canvas");
+        copy.width = c.width;
+        copy.height = c.height;
+        copy.getContext("2d").drawImage(c, 0, 0);
+        return copy;
+      });
+      const peakSnap = cloneFrameCanvas();
+      if (!frames.length) {
+        for (let i = 0; i < 4; i += 1) {
+          const copy = document.createElement("canvas");
+          copy.width = peakSnap.width;
+          copy.height = peakSnap.height;
+          copy.getContext("2d").drawImage(peakSnap, 0, 0);
+          frames.push(copy);
+        }
+      } else {
+        frames.push(peakSnap);
+      }
+      captureBusyFrames = frames;
+      stopCaptureTimers();
+      drainCaptureFrame();
+      captureDrainTimer = setInterval(drainCaptureFrame, FRAME_SAMPLE_MS);
+      captureWatchdogTimer = setTimeout(() => {
+        if (!captureBusy || captureFinalizing) return;
+        const pending = captureBusyFrames || [cloneFrameCanvas()];
+        captureBusyFrames = null;
+        finalizeMemoryCapture(pending).catch((error) => {
+          console.error("watchdog finalize failed", error);
+          finishCapture();
+        });
+      }, CAPTURE_WATCHDOG_MS);
+    }
+
+    async function loadModelsFrom(baseUri) {
+      const loaders = [
+        { name: "tinyFaceDetector", load: () => faceapi.nets.tinyFaceDetector.loadFromUri(baseUri) },
+        { name: "faceLandmark68Net", load: () => faceapi.nets.faceLandmark68Net.loadFromUri(baseUri) },
+        { name: "faceExpressionNet", load: () => faceapi.nets.faceExpressionNet.loadFromUri(baseUri) }
+      ];
+
+      for (const model of loaders) {
+        try {
+          await model.load();
+          console.log(`Model loaded: ${model.name} from ${baseUri}`);
+        } catch (error) {
+          console.error(`Model failed: ${model.name} from ${baseUri}`, error);
+          throw error;
+        }
+      }
+    }
+
+    async function loadModels() {
+      if (!window.faceapi) {
+        throw new Error("face-api.js did not load");
+      }
+
+      const localBase = "/models";
+      const fallbackBase = "https://justadudewhohacks.github.io/face-api.js/models";
+
+      try {
+        await loadModelsFrom(localBase);
+      } catch (localError) {
+        console.warn("Local /models load failed, trying fallback CDN models.");
+        await loadModelsFrom(fallbackBase);
+      }
+    }
+
+    function pickPrimaryFace(faces) {
+      if (!faces?.length) return null;
+      return faces.reduce((best, face) => {
+        const box = face.detection.box;
+        const area = box.width * box.height;
+        const bestBox = best.detection.box;
+        const bestArea = bestBox.width * bestBox.height;
+        return area > bestArea ? face : best;
+      });
+    }
+
+    async function runFaceDetection() {
+      if (video.readyState < 2) return;
+      if (!drawVideoCoverTo(detectCtx, detectCanvas.width, detectCanvas.height)) return;
+
+      try {
+        const faces = await faceapi
+          .detectAllFaces(detectCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 192, scoreThreshold: 0.35 }))
+          .withFaceLandmarks()
+          .withFaceExpressions();
+
+        peopleCount = faces.length;
+        const result = pickPrimaryFace(faces);
+
+        if (result) {
+          lastExpressions = result.expressions;
+          updateMoodState(result.expressions);
+          const neutralFace = isEmotionallyNeutral(result.expressions);
+          const live = getLiveExpression(result.expressions);
+          targetExpressionIntensity = neutralFace
+            ? 0
+            : computeExpressionIntensity(result.expressions);
+          lastDetection = {
+            expression: neutralFace ? "neutral" : live.name,
+            probability: neutralFace
+              ? (result.expressions.neutral || live.score)
+              : live.score,
+            intensity: targetExpressionIntensity
+          };
+          lastFaceBox = result.detection.box;
+          faceDetectVersion += 1;
+          const baseScore = expressionScores[live.name] ?? 0.3;
+          targetFaceScore = lerp(0.4, baseScore, 0.35) + (targetExpressionIntensity * 0.65);
+          targetFaceScore = clamp(targetFaceScore, 0.35, 1.0);
+        } else {
+          updateMoodState(null);
+          lastDetection = null;
+          lastFaceBox = null;
+          lastExpressions = null;
+          targetFaceScore = 0.3;
+          targetExpressionIntensity = 0;
+        }
+      } catch (error) {
+        console.error("Detection error", error);
+        updateMoodState(null);
+        peopleCount = 0;
+        lastDetection = null;
+        lastFaceBox = null;
+        targetFaceScore = 0.3;
+      }
+    }
+
+    function startDetectionLoop() {
+      if (detectionTimer) clearInterval(detectionTimer);
+      detectionTimer = setInterval(() => {
+        runFaceDetection().catch((error) => {
+          console.error("Detection tick failed", error);
+        });
+      }, DETECTION_INTERVAL_MS);
+    }
+
+    function drawViewfinderPlaceholder(message) {
+      ctx.fillStyle = "#12141a";
+      ctx.fillRect(0, 0, displayW, displayH);
+      ctx.fillStyle = "rgba(236, 228, 216, 0.5)";
+      ctx.font = '11px "IBM Plex Mono", monospace';
+      ctx.fillText(message, 16, 28);
+    }
+
+    function renderFrame() {
+      const now = performance.now();
+      try {
+      if (displayW < 16 || displayH < 16) resizeCanvases();
+      ensureThermalLUTs();
+      updateLiveEnergy();
+
+      const videoReady = video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2;
+      offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+      if (!videoReady) {
+        offCtx.fillStyle = "#12141a";
+        offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
+        ctx.drawImage(offscreen, 0, 0, displayW, displayH);
+        drawViewfinderPlaceholder("Acquiring sensor feed…");
+        updateInstrumentUI();
+      } else {
+      drawVideoCover();
+
+      const procW = offscreen.width;
+      const procH = offscreen.height;
+      const pixelCount = procW * procH;
+      const emberW = Math.max(160, procW >> 1);
+      const emberH = Math.max(120, procH >> 1);
+      const emberCount = emberW * emberH;
+      if (prevLumaFrame.length !== pixelCount) {
+        prevLumaFrame = new Float32Array(pixelCount);
+      }
+      if (motionEmber.length !== emberCount) {
+        motionEmber = new Float32Array(emberCount);
+        motionEmberTmp = new Float32Array(emberCount);
+        motionSpeedEmber = new Float32Array(emberCount);
+        motionSpeedEmberTmp = new Float32Array(emberCount);
+      }
+      for (let ep = 0; ep < emberCount; ep += 1) {
+        // More subtle persistence: short, soft-lived trails.
+        motionEmberTmp[ep] = motionEmber[ep] * 0.9;
+        motionSpeedEmberTmp[ep] = motionSpeedEmber[ep] * 0.88;
+      }
+
+      const frame = offCtx.getImageData(0, 0, procW, procH);
+      const data = frame.data;
+      const faceBox = mapDetectBoxToTarget(lastFaceBox, procW, procH);
+      if (faceBox) {
+        const tcx = faceBox.x + (faceBox.width * 0.5);
+        const tcy = faceBox.y + (faceBox.height * 0.56);
+        const trx = Math.max(24, faceBox.width * 0.5);
+        const tRy = Math.max(38, faceBox.height * 0.95);
+        if (!liveFace) {
+          liveFace = {
+            cx: tcx,
+            cy: tcy,
+            rx: trx,
+            ry: tRy,
+            height: faceBox.height,
+            glowCx: tcx,
+            glowCy: tcy,
+            glowRx: trx,
+            glowRy: tRy
+          };
+        } else if (faceDetectVersion !== consumedFaceVersion) {
+          consumedFaceVersion = faceDetectVersion;
+          liveFace.cx = lerp(liveFace.cx, tcx, 0.48);
+          liveFace.cy = lerp(liveFace.cy, tcy, 0.48);
+          liveFace.rx = lerp(liveFace.rx, trx, 0.38);
+          liveFace.ry = lerp(liveFace.ry, tRy, 0.38);
+          liveFace.height = lerp(liveFace.height, faceBox.height, 0.38);
+        } else {
+          liveFace.rx = lerp(liveFace.rx, trx, 0.22);
+          liveFace.ry = lerp(liveFace.ry, tRy, 0.22);
+          liveFace.height = lerp(liveFace.height, faceBox.height, 0.22);
+          liveFace.cx = lerp(liveFace.cx, tcx, 0.26);
+          liveFace.cy = lerp(liveFace.cy, tcy, 0.26);
+        }
+
+        let trackMass = 0;
+        let trackSumX = 0;
+        let trackSumY = 0;
+        const minY = Math.max(0, Math.floor(liveFace.cy - liveFace.ry * 1.35));
+        const maxY = Math.min(procH - 1, Math.ceil(liveFace.cy + liveFace.ry * 1.35));
+        const minX = Math.max(0, Math.floor(liveFace.cx - liveFace.rx * 1.35));
+        const maxX = Math.min(procW - 1, Math.ceil(liveFace.cx + liveFace.rx * 1.35));
+        for (let ty = minY; ty <= maxY; ty += 3) {
+          for (let tx = minX; tx <= maxX; tx += 3) {
+            const tp = ty * procW + tx;
+            const ti = tp * 4;
+            const tLum = (0.299 * data[ti] + 0.587 * data[ti + 1] + 0.114 * data[ti + 2]) / 255;
+            const tDelta = Math.abs(tLum - prevLumaFrame[tp]);
+            const tex = (tx - liveFace.cx) / (liveFace.rx * 1.2);
+            const tey = (ty - liveFace.cy) / (liveFace.ry * 1.2);
+            if ((tex * tex + tey * tey) > 1.1 || tDelta < 0.018) continue;
+            trackMass += tDelta;
+            trackSumX += tx * tDelta;
+            trackSumY += ty * tDelta;
+          }
+        }
+        if (trackMass > 0.014) {
+          const mx = trackSumX / trackMass;
+          const my = trackSumY / trackMass;
+          const offX = (mx - liveFace.cx) / liveFace.rx;
+          const offY = (my - liveFace.cy) / liveFace.ry;
+          if ((offX * offX + offY * offY) < 0.65) {
+            liveFace.cx = lerp(liveFace.cx, mx, 0.16);
+            liveFace.cy = lerp(liveFace.cy, my, 0.16);
+          }
+        }
+
+        liveFace.glowCx = lerp(liveFace.glowCx, liveFace.cx, 0.1);
+        liveFace.glowCy = lerp(liveFace.glowCy, liveFace.cy, 0.1);
+        liveFace.glowRx = lerp(liveFace.glowRx, liveFace.rx, 0.07);
+        liveFace.glowRy = lerp(liveFace.glowRy, liveFace.ry, 0.07);
+      } else if (liveFace) {
+        liveFace.rx *= 0.9;
+        liveFace.ry *= 0.9;
+        if (liveFace.rx < 12) liveFace = null;
+      }
+
+      const hasFace = Boolean(liveFace);
+      const cx = hasFace ? liveFace.glowCx : 0;
+      const cy = hasFace ? liveFace.glowCy : 0;
+      const rx = hasFace ? liveFace.glowRx : 1;
+      const ry = hasFace ? liveFace.glowRy : 1;
+      const faceHeight = hasFace ? liveFace.height : 0;
+      const bodyCx = hasFace ? cx : 0;
+      const bodyCy = hasFace ? cy + (faceHeight * 1.45) : 0;
+      const bodyRx = hasFace ? Math.max(42, rx * 2.36) : 1;
+      const bodyRy = hasFace ? Math.max(72, ry * 2.58) : 1;
+      const exprHeat = clamp(expressionIntensity, 0, 1);
+      const exprHeatCurve = Math.pow(exprHeat, 0.88);
+      const baseExpression = lastDetection?.expression || "neutral";
+      const currentExpression = (moodExpressionStable === "sad" || moodExpressionStable === "angry")
+        ? moodExpressionStable
+        : baseExpression;
+      const expressionConfidence = currentExpression === "sad"
+        ? moodSadLatch
+        : currentExpression === "angry"
+          ? moodAngryLatch
+          : clamp(lastDetection?.probability || 0, 0, 1);
+      const moodDrivenExpression = currentExpression === "sad" || currentExpression === "angry";
+      let frameMotionPeak = 0;
+      let movePixelCount = 0;
+
+      for (let y = 0; y < procH; y += 1) {
+        for (let x = 0; x < procW; x += 1) {
+          const i = (y * procW + x) * 4;
+          const p = y * procW + x;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+        const rawLum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        const delta = Math.abs(rawLum - prevLumaFrame[p]);
+        prevLumaFrame[p] = rawLum;
+        const bgIndex = Math.min(255, Math.floor(Math.pow(rawLum, 1.15) * 255));
+        const bg = bgLUT[bgIndex] || { r: 0, g: 0, b: 0 };
+
+        let warmMix = 0;
+        let thermalBoost = 0;
+        let trailMask = 0;
+        if (hasFace) {
+          const exFace = (x - cx) / rx;
+          const eyFace = (y - cy) / ry;
+          const distFace = Math.sqrt((exFace * exFace) + (eyFace * eyFace));
+          const exBody = (x - bodyCx) / bodyRx;
+          const eyBody = (y - bodyCy) / bodyRy;
+          const distBody = Math.sqrt((exBody * exBody) + (eyBody * eyBody));
+
+          const faceInfluence = Math.pow(clamp(1 - distFace, 0, 1), 1.28);
+          const bodyInfluence = Math.pow(clamp(1 - distBody, 0, 1), 1.25);
+          const humanInfluence = Math.max(faceInfluence, bodyInfluence * 0.92);
+          const faceCore = Math.pow(clamp(1 - distFace, 0, 1), 2.35);
+          const wholeFace = Math.pow(clamp(1 - distFace, 0, 1), 0.92);
+          const edgeSoft = Math.pow(clamp(1 - (distFace * 0.86), 0, 1), 1.4);
+          const containFace = clamp(1 - distFace, 0, 1);
+          const eyForehead = (y - (cy - ry * 0.46)) / (ry * 1.42);
+          const distForehead = Math.sqrt((exFace * exFace) + (eyForehead * eyForehead));
+          const containForehead = clamp(1 - distForehead, 0, 1);
+          const containBody = clamp(1 - distBody, 0, 1);
+          const personContain = Math.max(Math.pow(containFace, 0.95), Math.pow(containBody, 2.6));
+          trailMask = Math.pow(personContain, 1.45);
+
+          const skinLikely = clamp(((r - b) + 20) / 120, 0, 1) * clamp(((g - b) + 10) / 90, 0, 1);
+          const heatPotential = clamp((Math.pow(rawLum, 1.22) * 0.95) + (skinLikely * 0.6), 0, 1);
+          const energyDriven = clamp(energyScore + (exprHeatCurve * 0.62), 0, 1.45);
+          const energyRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 0.92);
+          const glowRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 1.22);
+          const neutralLift = clamp((0.58 - energyScore) / 0.58, 0, 1);
+          const neutralFaceArea = Math.max(containFace, Math.pow(containForehead, 0.72));
+          const neutralSpread = Math.pow(neutralFaceArea, 0.72) * neutralLift;
+
+          warmMix = humanInfluence * heatPotential * (0.28 + (energyRamp * 1.45));
+          warmMix += wholeFace * (0.05 + energyRamp * 0.72);
+          warmMix += edgeSoft * energyRamp * 0.22;
+          warmMix += bodyInfluence * energyRamp * 0.22;
+          warmMix += faceCore * glowRamp * (0.42 + exprHeatCurve * 0.62);
+          warmMix += neutralSpread * 0.1;
+          warmMix += containFace * exprHeatCurve * 0.38;
+          warmMix += faceCore * exprHeatCurve * 0.35;
+          warmMix *= personContain * 0.9;
+          const maxWarmMix = lerp(0.76, 0.9, exprHeatCurve);
+          warmMix = clamp(warmMix, 0, maxWarmMix);
+          thermalBoost = (
+            (faceCore * glowRamp * (0.26 + exprHeatCurve * 0.34)) +
+            (wholeFace * energyRamp * (0.14 + exprHeatCurve * 0.16)) +
+            (bodyInfluence * energyRamp * 0.1) +
+            (neutralSpread * 0.07)
+          ) * personContain;
+          thermalBoost += exprHeatCurve * 0.1 * personContain;
+        }
+
+        const boostedLum = clamp(Math.pow(rawLum, 0.88) + thermalBoost, 0, 1);
+        const lumCap = hasFace ? Math.round(lerp(205, 236, Math.pow(exprHeatCurve, 0.95))) : 210;
+        const lumIndex = Math.min(lumCap, Math.floor(boostedLum * 255));
+        const thermal = activeLUT[lumIndex] || bg;
+
+          let outR = Math.round(lerp(bg.r, thermal.r, warmMix));
+          let outG = Math.round(lerp(bg.g, thermal.g, warmMix));
+          let outB = Math.round(lerp(bg.b, thermal.b, warmMix));
+
+          if (hasFace && warmMix > 0.08 && (exprHeatCurve > 0.5 || (moodDrivenExpression && expressionConfidence > 0.55))) {
+            const exHot = (x - cx) / rx;
+            const eyHot = (y - cy) / ry;
+            const distHot = Math.sqrt((exHot * exHot) + (eyHot * eyHot));
+            const hotRadius = 1.18;
+            if (distHot < hotRadius) {
+              const thermalHotMix = clamp((exprHeatCurve - 0.5) / 0.5, 0, 1);
+              const moodHotMix = moodDrivenExpression ? clamp((expressionConfidence - 0.45) / 0.55, 0, 1) : 0;
+              const hotMix = Math.max(thermalHotMix, moodHotMix);
+              const hotMixShaped = hotMix * hotMix * (3 - (2 * hotMix));
+              const faceHot = Math.pow(clamp(1 - (distHot / hotRadius), 0, 1), 2.15);
+              const amberHot = facePeakColor(currentExpression, hotMixShaped);
+              const hotBlendGain = moodDrivenExpression ? 0.54 : 0.33;
+              const hotBlend = hotMixShaped * faceHot * hotBlendGain;
+              outR = Math.round(lerp(outR, amberHot.r, hotBlend));
+              outG = Math.round(lerp(outG, amberHot.g, hotBlend));
+              outB = Math.round(lerp(outB, amberHot.b, hotBlend));
+            }
+
+            const detailStrength = clamp(exprHeatCurve * 0.52, 0.12, 0.42);
+            const detail = (rawLum - 0.5) * detailStrength * 70;
+            outR = clamp(outR + detail, 0, 255);
+            outG = clamp(outG + detail * 0.88, 0, 255);
+            outB = clamp(outB + detail * 0.42, 0, 255);
+          }
+
+          const adaptiveDeltaFloor = hasFace ? 0.055 : 0.08;
+          const motionHit = clamp((delta - adaptiveDeltaFloor) * 6.2, 0, 1);
+          // Allow non-face movers (hands/background people) when motion is strong.
+          const globalMotionMask = clamp((motionHit - 0.48) * 1.9, 0, 1);
+          const motionSourceMask = hasFace
+            ? Math.max(trailMask, globalMotionMask)
+            : globalMotionMask;
+          const ex = x >> 1;
+          const ey = y >> 1;
+          if (motionHit > 0.22 && motionSourceMask > 0.12 && ex < emberW && ey < emberH) {
+            const ep = ey * emberW + ex;
+            const inject = motionHit * motionSourceMask * 0.26;
+            if (inject > motionEmberTmp[ep]) motionEmberTmp[ep] = inject;
+            const speedInject = clamp((motionHit - 0.22) / 0.7, 0, 1) * motionSourceMask;
+            if (speedInject > motionSpeedEmberTmp[ep]) motionSpeedEmberTmp[ep] = speedInject;
+          }
+
+          const moveHit = clamp((delta - 0.12) * 4.2, 0, 1) * Math.max(0.35, motionSourceMask);
+          if (moveHit > 0.24) {
+            movePixelCount += 1;
+            if (moveHit > frameMotionPeak) frameMotionPeak = moveHit;
+          }
+
+          data[i] = outR;
+          data[i + 1] = outG;
+          data[i + 2] = outB;
+        }
+      }
+
+      blurEmberField(motionEmberTmp, motionEmber, emberW, emberH);
+      blurEmberField(motionEmber, motionEmberTmp, emberW, emberH);
+      blurEmberField(motionSpeedEmberTmp, motionSpeedEmber, emberW, emberH);
+      blurEmberField(motionSpeedEmber, motionSpeedEmberTmp, emberW, emberH);
+
+      const emberScaleX = emberW / procW;
+      const emberScaleY = emberH / procH;
+      for (let y = 0; y < procH; y += 1) {
+        for (let x = 0; x < procW; x += 1) {
+          const i = (y * procW + x) * 4;
+          const emberVal = sampleEmberBilinear(
+            motionEmber,
+            emberW,
+            emberH,
+            (x + 0.5) * emberScaleX,
+            (y + 0.5) * emberScaleY
+          );
+          if (emberVal < 0.055) continue;
+          const emberSpeedVal = sampleEmberBilinear(
+            motionSpeedEmber,
+            emberW,
+            emberH,
+            (x + 0.5) * emberScaleX,
+            (y + 0.5) * emberScaleY
+          );
+          let spatialGate = 1;
+          if (hasFace) {
+            const exBody = (x - bodyCx) / (bodyRx * 1.12);
+            const eyBody = (y - bodyCy) / (bodyRy * 1.12);
+            const bodyGate = clamp(1 - Math.sqrt((exBody * exBody) + (eyBody * eyBody)), 0, 1);
+            // Keep trails near person by default, but permit strong off-body movers.
+            const offBodyBoost = clamp((emberVal - 0.08) * 4.2, 0, 1);
+            spatialGate = Math.max(bodyGate, offBodyBoost);
+            if (spatialGate < 0.04) continue;
+          }
+          const emberSoft = Math.pow(emberVal, 0.74);
+          const emberShape = emberSoft * emberSoft * (3 - (2 * emberSoft));
+          const localTrailSpeed = clamp((emberSpeedVal - 0.06) / 0.42, 0, 1);
+          const trail = moodyTrailRgb(emberShape, energyScore, localTrailSpeed);
+          const edgeBlend = clamp((emberVal - 0.055) / 0.14, 0, 1);
+          const speedAlpha = clamp((localTrailSpeed - 0.04) / 0.9, 0.12, 1);
+          const trailMix = clamp(
+            Math.pow(emberShape, 0.92) * (0.12 + localTrailSpeed * 0.36) * spatialGate * edgeBlend * speedAlpha,
+            0,
+            0.5
+          );
+          data[i] = Math.round(lerp(data[i], trail.r, trailMix));
+          data[i + 1] = Math.round(lerp(data[i + 1], trail.g, trailMix));
+          data[i + 2] = Math.round(lerp(data[i + 2], trail.b, trailMix));
+        }
+      }
+
+      offCtx.putImageData(frame, 0, 0);
+      pushFrameSample(now);
+      ctx.drawImage(offscreen, 0, 0, displayW, displayH);
+
+      // Motion metric: normalize to 0–1, then smooth for stable readout.
+      const movingRatio = movePixelCount / Math.max(1, pixelCount);
+      const peakNorm = clamp((frameMotionPeak - 0.42) / 0.58, 0, 1);
+      const spreadNorm = clamp((movingRatio - 0.05) / 0.14, 0, 1);
+      const motionRaw = clamp(Math.max(peakNorm, spreadNorm * 0.45), 0, 1);
+      const motionInstant = Math.pow(motionRaw, 1.35);
+      const motionRise = motionInstant > moveLevel ? 0.1 : 0.14;
+      moveLevel = lerp(moveLevel, motionInstant, motionRise);
+      const displayRise = motionInstant > moveLevelDisplay ? 0.08 : 0.12;
+      moveLevelDisplay = lerp(moveLevelDisplay, motionInstant, displayRise);
+      const trailRise = moveLevel > trailHeat ? 0.14 : 0.1;
+      trailHeat = lerp(trailHeat, moveLevel, trailRise);
+      tickPeakCapture();
+      }
+      uiUpdateFrame += 1;
+      if (uiUpdateFrame % UI_UPDATE_EVERY_N_FRAMES === 0 || captureBusy) updateInstrumentUI();
+      } catch (error) {
+        console.error("renderFrame error", error);
+        if (displayW >= 16 && displayH >= 16) {
+          drawViewfinderPlaceholder("Render error — check console");
+        }
+      }
+      requestAnimationFrame(renderFrame);
+    }
+
+    function getSlotPitch() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--slot-pitch")) || 58;
+    }
+
+    function getDialViewportHeight() {
+      if (!memoryDial) return 0;
+      const direct = memoryDial.clientHeight;
+      if (direct > 8) return direct;
+      const frame = memoryDial.parentElement;
+      if (frame?.clientHeight > 8) return Math.max(0, frame.clientHeight - 16);
+      const cssDial = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--dial-height")
+      );
+      return Number.isFinite(cssDial) && cssDial > 8 ? cssDial : 272;
+    }
+
+    function getDialBallCount() {
+      return memoryBalls ? memoryBalls.querySelectorAll(".memory-ball").length : 0;
+    }
+
+    function getCenterDialIndex(n = getDialBallCount()) {
+      if (n <= 0) return 0;
+      return Math.floor((n - 1) / 2);
+    }
+
+    function insertMemorySlotAtCenter(slot) {
+      const before = memoryBalls.children.length;
+      const insertIdx = Math.floor(before / 2);
+      if (insertIdx >= before) memoryBalls.append(slot);
+      else memoryBalls.insertBefore(slot, memoryBalls.children[insertIdx]);
+      return insertIdx;
+    }
+
+    function scrollYForIndex(index) {
+      return -index * getSlotPitch();
+    }
+
+    function getDialScrollLimits() {
+      const n = getDialBallCount();
+      if (n <= 0) return { min: 0, max: 0 };
+      const min = scrollYForIndex(n - 1);
+      const max = scrollYForIndex(0);
+      return { min: Math.min(min, max), max: Math.max(min, max) };
+    }
+
+    function clampDialScroll(y) {
+      const { min, max } = getDialScrollLimits();
+      if (min === max) return y;
+      return clamp(y, min, max);
+    }
+
+    function getSelectedDialIndex() {
+      const n = getDialBallCount();
+      if (!n) return 0;
+      const pitch = getSlotPitch();
+      const idx = Math.round(-dialScrollY / pitch);
+      return clamp(idx, 0, n - 1);
+    }
+
+    function applyDialScroll(y, animate = true) {
+      if (!memoryDialStrip) return;
+      dialScrollY = clampDialScroll(y);
+      memoryDialStrip.style.transition = animate
+        ? "transform 0.38s cubic-bezier(0.34, 1.25, 0.64, 1)"
+        : "none";
+      memoryDialStrip.style.transform = `translateY(${dialScrollY}px)`;
+      updateDialFocus();
+    }
+
+    function snapDialToIndex(index, animate = true) {
+      const n = getDialBallCount();
+      if (!n) return;
+      const idx = ((index % n) + n) % n;
+      applyDialScroll(scrollYForIndex(idx), animate);
+    }
+
+    function snapDialToNearest(animate = true) {
+      snapDialToIndex(getSelectedDialIndex(), animate);
+    }
+
+    function playBallGif(ball) {
+      const img = ball.querySelector("img");
+      const gifUrl = ball.dataset.gifUrl;
+      const poster = ball.dataset.posterUrl || "";
+      if (!img || !gifUrl || !isAnimatedGifUrl(gifUrl)) {
+        if (img && poster && img.src !== poster) img.src = poster;
+        return;
+      }
+      if (img.dataset.playing === "1" && img.getAttribute("data-active-src") === gifUrl) return;
+
+      const startGif = () => {
+        img.onerror = () => {
+          img.onerror = null;
+          img.dataset.playing = "0";
+          img.removeAttribute("data-active-src");
+          if (ball._captureFrames?.length) playBallFrameLoop(ball);
+          else if (poster) img.src = poster;
+        };
+        img.dataset.playing = "1";
+        img.setAttribute("data-active-src", gifUrl);
+        const needsRestart = img.src === gifUrl || img.currentSrc === gifUrl;
+        if (needsRestart) {
+          img.src = "";
+          requestAnimationFrame(() => { img.src = gifUrl; });
+        } else {
+          img.src = gifUrl;
+        }
+      };
+
+      if (ball.dataset.gifReady === "1") {
+        startGif();
+        return;
+      }
+
+      const probe = new Image();
+      probe.onload = () => {
+        ball.dataset.gifReady = "1";
+        if (ball.classList.contains("is-selected")) startGif();
+      };
+      probe.onerror = () => {
+        ball.dataset.gifReady = "0";
+        if (ball.classList.contains("is-selected") && ball._captureFrames?.length) {
+          playBallFrameLoop(ball);
+        } else if (poster) {
+          img.src = poster;
+        }
+      };
+      probe.src = gifUrl;
+    }
+
+    function pauseBallGif(ball) {
+      const img = ball.querySelector("img");
+      const poster = ball.dataset.posterUrl;
+      if (!img) return;
+      img.dataset.playing = "0";
+      img.removeAttribute("data-active-src");
+      if (poster && img.src !== poster) img.src = poster;
+    }
+
+    function playBallMemory(ball) {
+      if (!ball) return;
+      stopBallFrameLoop(ball);
+      const gifUrl = ball.dataset.gifUrl;
+      if (isAnimatedGifUrl(gifUrl)) {
+        playBallGif(ball);
+        return;
+      }
+      if (ball._captureFrames?.length >= 2) {
+        playBallFrameLoop(ball);
+        return;
+      }
+      pauseBallGif(ball);
+    }
+
+    function pauseBallMemory(ball) {
+      stopBallFrameLoop(ball);
+      pauseBallGif(ball);
+    }
+
+    function updateDialFocus() {
+      if (!memoryBalls) return;
+      const balls = [...memoryBalls.querySelectorAll(".memory-ball")];
+      const selectedIdx = getSelectedDialIndex();
+      balls.forEach((ball, i) => {
+        const isSelected = i === selectedIdx;
+        ball.classList.toggle("is-selected", isSelected);
+        if (isSelected) playBallMemory(ball);
+        else pauseBallMemory(ball);
+      });
+    }
+
+    function layoutDialBalls() {
+      if (!memoryBalls || !memoryDial) return;
+      const pitch = getSlotPitch();
+      const viewportH = getDialViewportHeight();
+      const pad = Math.max(0, viewportH / 2 - pitch / 2);
+      memoryBalls.style.paddingTop = `${pad}px`;
+      memoryBalls.style.paddingBottom = `${pad}px`;
+      const n = getDialBallCount();
+      if (n > 0) snapDialToIndex(getCenterDialIndex(n), false);
+      else if (memoryDialStrip) memoryDialStrip.style.transform = "translateY(0px)";
+      updateDialFocus();
+    }
+
+    function scheduleLayoutDialBalls(attempt = 0) {
+      layoutDialBalls();
+      const needsRetry = getDialBallCount() > 0
+        && getDialViewportHeight() < 8
+        && attempt < 16;
+      if (needsRetry) {
+        requestAnimationFrame(() => scheduleLayoutDialBalls(attempt + 1));
+      }
+    }
+
+    function setBallMedia(ball, mediaUrl, posterUrl) {
+      const poster = posterUrl || mediaUrl;
+      const isGif = isAnimatedGifUrl(mediaUrl);
+      ball.dataset.posterUrl = poster;
+      ball.dataset.gifUrl = isGif ? mediaUrl : "";
+      ball.dataset.animated = isGif ? "1" : "0";
+      ball.dataset.gifReady = "0";
+      const img = document.createElement("img");
+      img.alt = "Core memory";
+      img.decoding = "async";
+      img.src = poster;
+      ball.appendChild(img);
+    }
+
+    function resolveBallPreview(mediaUrl, captureFrames) {
+      if (mediaUrl) return mediaUrl;
+      if (captureFrames?.length) return previewFromFrames(captureFrames);
+      return frameToPreviewUrl(cloneFrameCanvas());
+    }
+
+    function addCoreMemoryBall(mediaUrl, posterUrl, mood = "happy", captureFrames = null) {
+      if (!memoryBalls || !memoryRack) return null;
+      const preview = resolveBallPreview(mediaUrl, captureFrames);
+      if (!preview) return null;
+
+      memoryRack.classList.remove("empty");
+      const slot = document.createElement("div");
+      slot.className = "memory-slot";
+      const ball = document.createElement("div");
+      ball.className = "memory-ball is-new";
+      applyBallMood(ball, mood);
+      slot.appendChild(ball);
+      const centerIdx = insertMemorySlotAtCenter(slot);
+      setBallMedia(ball, preview, posterUrl || preview);
+      if (captureFrames?.length) attachBallCaptureFrames(ball, captureFrames);
+      scheduleLayoutDialBalls();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          snapDialToIndex(centerIdx, true);
+          updateDialFocus();
+          setTimeout(() => ball.classList.remove("is-new"), 560);
+        });
+      });
+      return ball;
+    }
+
+    function onDialPointerDown(e) {
+      if (!memoryDial || getDialBallCount() === 0) return;
+      dialDragging = true;
+      dialPointerId = e.pointerId;
+      memoryDial.classList.add("is-dragging");
+      memoryDial.setPointerCapture(e.pointerId);
+      dialDragStartY = e.clientY;
+      dialDragStartScroll = dialScrollY;
+      if (memoryDialStrip) memoryDialStrip.style.transition = "none";
+    }
+
+    function onDialPointerMove(e) {
+      if (!dialDragging || e.pointerId !== dialPointerId) return;
+      applyDialScroll(dialDragStartScroll + (e.clientY - dialDragStartY), false);
+    }
+
+    function onDialPointerUp(e) {
+      if (!dialDragging || e.pointerId !== dialPointerId) return;
+      dialDragging = false;
+      dialPointerId = null;
+      memoryDial.classList.remove("is-dragging");
+      try { memoryDial.releasePointerCapture(e.pointerId); } catch (_) {}
+      snapDialToNearest(true);
+    }
+
+    function onDialWheel(e) {
+      if (!memoryDial || getDialBallCount() === 0) return;
+      e.preventDefault();
+      const n = getDialBallCount();
+      const idx = getSelectedDialIndex();
+      const next = e.deltaY > 0 ? (idx - 1 + n) % n : (idx + 1) % n;
+      snapDialToIndex(next, true);
+    }
+
+    function initMemoryDial() {
+      if (!memoryDial) return;
+      memoryDial.addEventListener("pointerdown", onDialPointerDown);
+      memoryDial.addEventListener("pointermove", onDialPointerMove);
+      memoryDial.addEventListener("pointerup", onDialPointerUp);
+      memoryDial.addEventListener("pointercancel", onDialPointerUp);
+      memoryDial.addEventListener("wheel", onDialWheel, { passive: false });
+      window.addEventListener("resize", layoutDialBalls);
+      if (memoryRack && typeof ResizeObserver !== "undefined") {
+        new ResizeObserver(() => scheduleLayoutDialBalls()).observe(memoryRack);
+      }
+      scheduleLayoutDialBalls();
+    }
+
+    const VF_TRANSMISSION_MSG =
+      "Hold your absolute best smile! Energy levels are indicated by your facial expression and movement.";
+
+    function initViewfinderTransmission() {
+      const textEl = document.getElementById("vfTransmissionText");
+      const cursorEl = document.getElementById("vfTransmissionCursor");
+      if (!textEl) return;
+
+      const charMs = 36;
+      const startDelayMs = 500;
+      let index = 0;
+
+      function typeNext() {
+        if (index >= VF_TRANSMISSION_MSG.length) {
+          cursorEl?.classList.add("is-done");
+          return;
+        }
+        textEl.textContent += VF_TRANSMISSION_MSG.charAt(index);
+        index += 1;
+        setTimeout(typeNext, charMs);
+      }
+
+      setTimeout(typeNext, startDelayMs);
+    }
+
+    function initHeaderChips() {
+      chipCapture?.addEventListener("click", () => {
+        if (captureBusy || captureFinalizing) return;
+        if (video.readyState < 2) {
+          if (footerStatus) footerStatus.textContent = "Camera not ready — wait a moment";
+          return;
+        }
+        queuePeakMemoryCapture(true);
+      });
+
+      chipMemories?.addEventListener("click", () => {
+        const n = getDialBallCount();
+        if (!n) return;
+        snapDialToIndex(getCenterDialIndex(n), true);
+      });
+    }
+
+    async function waitForVideoReady() {
+      if (video.readyState >= 2 && video.videoWidth > 0) return;
+      await new Promise((resolve) => {
+        const done = () => {
+          if (video.videoWidth > 0) resolve();
+        };
+        video.addEventListener("loadeddata", done, { once: true });
+        video.addEventListener("loadedmetadata", done, { once: true });
+        setTimeout(resolve, 2500);
+      });
+    }
+
+    async function initWebcam() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play();
+      await waitForVideoReady();
+      console.log("webcam ready", video.videoWidth, "x", video.videoHeight);
+    }
+
+    async function init() {
+      finishCapture();
+      frameRing = [];
+      ensureThermalLUTs();
+      resizeCanvases();
+      window.addEventListener("resize", resizeCanvases);
+      if (viewport && typeof ResizeObserver !== "undefined") {
+        new ResizeObserver(resizeCanvases).observe(viewport);
+      }
+      updateClockHands();
+      setInterval(updateClockHands, 1000);
+      initHeaderChips();
+      initMemoryDial();
+      initViewfinderTransmission();
+      requestAnimationFrame(renderFrame);
+
+      try {
+        if (footerStatus) footerStatus.textContent = "Acquiring sensor…";
+        await initWebcam();
+        rebuildActiveLUT(true);
+        resizeCanvases();
+        requestAnimationFrame(resizeCanvases);
+        if (footerStatus) footerStatus.textContent = "Camera live — loading models…";
+
+        await loadModels();
+        modelsReady = true;
+        await runFaceDetection();
+        startDetectionLoop();
+        resizeCanvases();
+        if (footerStatus) footerStatus.textContent = "Sensor online · radiometric feed active";
+      } catch (error) {
+        console.error("Init error", error);
+        if (footerStatus) {
+          footerStatus.textContent = error?.message?.includes("face-api")
+            ? "Camera on — expression models unavailable"
+            : "Camera error — check permission and reload";
+        }
+      }
+    }
+
+    init().catch((error) => {
+      console.error("Fatal init error", error);
+      if (footerStatus) footerStatus.textContent = "Failed to start — see console";
+    });
+  </script>
+</body>
+</html>
