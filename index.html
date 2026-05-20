@@ -796,39 +796,188 @@
     }
 
     @media (max-width: 820px) {
-      .instrument {
-        height: min(900px, 100%);
+      html, body {
+        height: auto;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        overflow-y: auto;
       }
+
+      body {
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 10px;
+      }
+
+      .instrument {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        padding: 14px 12px;
+        gap: 12px;
+      }
+
+      .instrument-header {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 2px 0;
+      }
+
+      .header-chips {
+        width: 100%;
+        max-width: 320px;
+      }
+
+      .instrument-body {
+        flex: none;
+        min-height: 0;
+      }
+
+      .sensor-stack {
+        flex: none;
+      }
+
       .sensor-stack-body {
         grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1fr) auto auto;
+        grid-template-rows: auto auto auto;
+        gap: 10px;
+        flex: none;
+        min-height: 0;
       }
+
       .viewport-panel {
         grid-column: 1;
         grid-row: 1;
+        min-height: 0;
+        height: auto;
+        overflow: visible;
       }
+
+      .viewport-recess {
+        flex: none;
+        width: 100%;
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 4 / 3;
+        max-height: min(56vw, 340px);
+      }
+
+      .viewport-panel .instrument-footer {
+        font-size: 8px;
+        padding: 8px 10px;
+        flex-wrap: wrap;
+        row-gap: 4px;
+      }
+
+      .footer-status {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      #footerStatus {
+        word-break: break-word;
+        line-height: 1.4;
+      }
+
+      #footerClock {
+        flex-shrink: 0;
+      }
+
+      .vf-hud {
+        padding: 10px 12px;
+      }
+
+      .vf-hud-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .vf-transmission {
+        max-width: 100%;
+        margin-right: 0;
+        font-size: 9px;
+        line-height: 1.45;
+      }
+
+      .vf-hud-stats {
+        gap: 4px 14px;
+      }
+
       .telemetry-panel {
         grid-column: 1;
         grid-row: 2;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .telemetry-panel .readout-card {
+        padding: 8px 10px;
+        min-width: 0;
+      }
+
+      .readout-value {
+        font-size: 11px;
+      }
+
       .memory-rack {
         grid-column: 1;
         grid-row: 3;
-        flex-direction: row;
-        justify-content: center;
-        padding: 10px;
-        min-height: 200px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 10px 8px 12px;
+        min-height: 0;
+        height: auto;
       }
+
       .memory-dial-wrap {
-        flex: 1 1 auto;
-        width: min(100%, 420px);
-        max-height: 120px;
+        flex: 0 0 auto;
+        width: var(--dial-width);
+        max-width: 100%;
+        min-height: 168px;
+        height: 168px;
+        max-height: none;
       }
+
       .memory-track-frame {
-        border-radius: var(--radius-md);
+        border-radius: calc(var(--dial-width) / 2);
       }
+
+      .dial-arrow {
+        left: -2px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 8px;
+      }
+
+      .instrument {
+        padding: 12px 10px;
+        border-radius: var(--radius-lg);
+      }
+
+      .brand {
+        font-size: 13px;
+        letter-spacing: 0.16em;
+      }
+
+      .chip {
+        padding: 6px 8px;
+      }
+
       .telemetry-panel {
-        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .readout-title {
+        margin-bottom: 6px;
+      }
+
+      :root {
+        --ball-size-active: 76px;
       }
     }
   </style>
@@ -1169,6 +1318,32 @@
       return lerp(top, bot, ty);
     }
 
+    function emberIndexFromPixel(x, y, procW, procH, emberW, emberH) {
+      const ex = clamp(Math.floor(((x + 0.5) * emberW) / procW), 0, emberW - 1);
+      const ey = clamp(Math.floor(((y + 0.5) * emberH) / procH), 0, emberH - 1);
+      return ey * emberW + ex;
+    }
+
+    function getBodyTrailBounds(hasFace, cx, cy, rx, ry, faceHeight, procH) {
+      if (!hasFace) {
+        return { bodyCx: 0, bodyCy: 0, bodyRx: 1, bodyRyUp: 1, bodyRyDown: 1 };
+      }
+      return {
+        bodyCx: cx,
+        bodyCy: cy + faceHeight * 0.95,
+        bodyRx: Math.max(58, rx * 3.05),
+        bodyRyUp: Math.max(70, ry * 1.55),
+        bodyRyDown: Math.max(procH * 0.52, ry * 4.2, faceHeight * 2.8)
+      };
+    }
+
+    function bodyTrailContain(x, y, bounds) {
+      const ex = (x - bounds.bodyCx) / bounds.bodyRx;
+      const ryEff = y >= bounds.bodyCy ? bounds.bodyRyDown : bounds.bodyRyUp;
+      const ey = (y - bounds.bodyCy) / ryEff;
+      return clamp(1 - Math.sqrt((ex * ex) + (ey * ey)), 0, 1);
+    }
+
     function moodyTrailRgb(intensity, energy, speedBoost) {
       const local = clamp(intensity, 0, 1);
       const speed = clamp(speedBoost, 0, 1);
@@ -1323,6 +1498,12 @@
     }
 
     let canvasDpr = 1;
+    let resizeCanvasTimer = null;
+    let dialLayoutTimer = null;
+
+    function isMobileLayout() {
+      return window.matchMedia("(max-width: 820px)").matches;
+    }
 
     function resizeCanvases() {
       if (!viewport) return;
@@ -1336,14 +1517,18 @@
       }
       if (w < 16 || h < 16) {
         const panel = viewport.parentElement?.getBoundingClientRect();
-        w = Math.max(w, Math.floor(panel?.width || 0), 480);
-        h = Math.max(h, Math.floor(panel?.height || 0), 360);
-        viewport.style.minHeight = `${h}px`;
+        const mobile = isMobileLayout();
+        w = Math.max(w, Math.floor(panel?.width || 0), mobile ? 280 : 480);
+        h = Math.max(h, Math.floor(panel?.height || 0), mobile ? 210 : 360);
+        if (mobile) viewport.style.minHeight = "";
+        else viewport.style.minHeight = `${h}px`;
+      } else {
+        viewport.style.minHeight = "";
       }
 
       displayW = Math.max(16, w);
       displayH = Math.max(16, h);
-      canvasDpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      canvasDpr = Math.min(window.devicePixelRatio || 1, isMobileLayout() ? 1 : 1.25);
       canvas.width = Math.max(1, Math.floor(displayW * canvasDpr));
       canvas.height = Math.max(1, Math.floor(displayH * canvasDpr));
       canvas.style.width = `${displayW}px`;
@@ -2268,10 +2453,7 @@
       const rx = hasFace ? liveFace.glowRx : 1;
       const ry = hasFace ? liveFace.glowRy : 1;
       const faceHeight = hasFace ? liveFace.height : 0;
-      const bodyCx = hasFace ? cx : 0;
-      const bodyCy = hasFace ? cy + (faceHeight * 1.45) : 0;
-      const bodyRx = hasFace ? Math.max(42, rx * 2.36) : 1;
-      const bodyRy = hasFace ? Math.max(72, ry * 2.58) : 1;
+      const body = getBodyTrailBounds(hasFace, cx, cy, rx, ry, faceHeight, procH);
       const exprHeat = clamp(expressionIntensity, 0, 1);
       const exprHeatCurve = Math.pow(exprHeat, 0.88);
       const baseExpression = lastDetection?.expression || "neutral";
@@ -2307,12 +2489,13 @@
           const exFace = (x - cx) / rx;
           const eyFace = (y - cy) / ry;
           const distFace = Math.sqrt((exFace * exFace) + (eyFace * eyFace));
-          const exBody = (x - bodyCx) / bodyRx;
-          const eyBody = (y - bodyCy) / bodyRy;
+          const exBody = (x - body.bodyCx) / body.bodyRx;
+          const bodyRyEff = y >= body.bodyCy ? body.bodyRyDown : body.bodyRyUp;
+          const eyBody = (y - body.bodyCy) / bodyRyEff;
           const distBody = Math.sqrt((exBody * exBody) + (eyBody * eyBody));
 
           const faceInfluence = Math.pow(clamp(1 - distFace, 0, 1), 1.28);
-          const bodyInfluence = Math.pow(clamp(1 - distBody, 0, 1), 1.25);
+          const bodyInfluence = Math.pow(clamp(1 - distBody, 0, 1), 1.18);
           const humanInfluence = Math.max(faceInfluence, bodyInfluence * 0.92);
           const faceCore = Math.pow(clamp(1 - distFace, 0, 1), 2.35);
           const wholeFace = Math.pow(clamp(1 - distFace, 0, 1), 0.92);
@@ -2322,8 +2505,8 @@
           const distForehead = Math.sqrt((exFace * exFace) + (eyForehead * eyForehead));
           const containForehead = clamp(1 - distForehead, 0, 1);
           const containBody = clamp(1 - distBody, 0, 1);
-          const personContain = Math.max(Math.pow(containFace, 0.95), Math.pow(containBody, 2.6));
-          trailMask = Math.pow(personContain, 1.45);
+          const personContain = Math.max(Math.pow(containFace, 0.95), Math.pow(containBody, 1.55));
+          trailMask = Math.pow(personContain, 1.15);
 
           const skinLikely = clamp(((r - b) + 20) / 120, 0, 1) * clamp(((g - b) + 10) / 90, 0, 1);
           const heatPotential = clamp((Math.pow(rawLum, 1.22) * 0.95) + (skinLikely * 0.6), 0, 1);
@@ -2393,13 +2576,12 @@
           const motionHit = clamp((delta - adaptiveDeltaFloor) * 6.2, 0, 1);
           // Allow non-face movers (hands/background people) when motion is strong.
           const globalMotionMask = clamp((motionHit - 0.48) * 1.9, 0, 1);
+          const lowerFrameBoost = clamp(((y / procH) - 0.38) / 0.62, 0, 1) * motionHit * 0.55;
           const motionSourceMask = hasFace
-            ? Math.max(trailMask, globalMotionMask)
+            ? Math.max(trailMask, globalMotionMask, lowerFrameBoost)
             : globalMotionMask;
-          const ex = x >> 1;
-          const ey = y >> 1;
-          if (motionHit > 0.22 && motionSourceMask > 0.12 && ex < emberW && ey < emberH) {
-            const ep = ey * emberW + ex;
+          if (motionHit > 0.22 && motionSourceMask > 0.12) {
+            const ep = emberIndexFromPixel(x, y, procW, procH, emberW, emberH);
             const inject = motionHit * motionSourceMask * 0.26;
             if (inject > motionEmberTmp[ep]) motionEmberTmp[ep] = inject;
             const speedInject = clamp((motionHit - 0.22) / 0.7, 0, 1) * motionSourceMask;
@@ -2445,13 +2627,10 @@
           );
           let spatialGate = 1;
           if (hasFace) {
-            const exBody = (x - bodyCx) / (bodyRx * 1.12);
-            const eyBody = (y - bodyCy) / (bodyRy * 1.12);
-            const bodyGate = clamp(1 - Math.sqrt((exBody * exBody) + (eyBody * eyBody)), 0, 1);
-            // Keep trails near person by default, but permit strong off-body movers.
-            const offBodyBoost = clamp((emberVal - 0.08) * 4.2, 0, 1);
+            const bodyGate = bodyTrailContain(x, y, body);
+            const offBodyBoost = clamp((emberVal - 0.05) * 3.2, 0, 1);
             spatialGate = Math.max(bodyGate, offBodyBoost);
-            if (spatialGate < 0.04) continue;
+            if (spatialGate < 0.03) continue;
           }
           const emberSoft = Math.pow(emberVal, 0.74);
           const emberShape = emberSoft * emberSoft * (3 - (2 * emberSoft));
@@ -2687,10 +2866,20 @@
       layoutDialBalls();
       const needsRetry = getDialBallCount() > 0
         && getDialViewportHeight() < 8
-        && attempt < 16;
+        && attempt < 8;
       if (needsRetry) {
         requestAnimationFrame(() => scheduleLayoutDialBalls(attempt + 1));
       }
+    }
+
+    function debouncedScheduleLayoutDialBalls() {
+      clearTimeout(dialLayoutTimer);
+      dialLayoutTimer = setTimeout(() => scheduleLayoutDialBalls(), 60);
+    }
+
+    function debouncedResizeCanvases() {
+      clearTimeout(resizeCanvasTimer);
+      resizeCanvasTimer = setTimeout(resizeCanvases, 60);
     }
 
     function setBallMedia(ball, mediaUrl, posterUrl) {
@@ -2780,9 +2969,9 @@
       memoryDial.addEventListener("pointerup", onDialPointerUp);
       memoryDial.addEventListener("pointercancel", onDialPointerUp);
       memoryDial.addEventListener("wheel", onDialWheel, { passive: false });
-      window.addEventListener("resize", layoutDialBalls);
+      window.addEventListener("resize", debouncedScheduleLayoutDialBalls);
       if (memoryRack && typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(() => scheduleLayoutDialBalls()).observe(memoryRack);
+        new ResizeObserver(debouncedScheduleLayoutDialBalls).observe(memoryRack);
       }
       scheduleLayoutDialBalls();
     }
@@ -2857,9 +3046,9 @@
       frameRing = [];
       ensureThermalLUTs();
       resizeCanvases();
-      window.addEventListener("resize", resizeCanvases);
+      window.addEventListener("resize", debouncedResizeCanvases);
       if (viewport && typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(resizeCanvases).observe(viewport);
+        new ResizeObserver(debouncedResizeCanvases).observe(viewport);
       }
       updateClockHands();
       setInterval(updateClockHands, 1000);
