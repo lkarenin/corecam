@@ -125,15 +125,7 @@
       display: flex;
       flex-direction: column;
       min-height: var(--topbar-h);
-      background:
-        repeating-linear-gradient(
-          90deg,
-          rgba(0, 0, 0, 0.07) 0,
-          rgba(0, 0, 0, 0.07) 1px,
-          transparent 1px,
-          transparent 7px
-        ),
-        linear-gradient(180deg, var(--deck) 0%, var(--deck-deep) 100%);
+      background: linear-gradient(180deg, var(--deck) 0%, var(--deck-deep) 100%);
       border-bottom: 1px solid rgba(0, 0, 0, 0.12);
       box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
       flex-shrink: 0;
@@ -149,10 +141,59 @@
       overflow: hidden;
     }
 
+    .timeline-ruler {
+      position: absolute;
+      left: var(--panel-content-inset-x);
+      right: var(--panel-content-inset-x);
+      bottom: 0;
+      height: 22px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .timeline-ruler-mark.is-start {
+      transform: none;
+      align-items: flex-start;
+    }
+
+    .timeline-ruler-mark.is-end {
+      transform: translateX(-100%);
+      align-items: flex-end;
+    }
+
+    .timeline-ruler-mark {
+      position: absolute;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 1px;
+      transform: translateX(-50%);
+    }
+
+    .timeline-ruler-tick {
+      width: 1px;
+      height: 9px;
+      background: rgba(120, 112, 102, 0.42);
+      flex-shrink: 0;
+    }
+
+    .timeline-ruler-label {
+      font-size: 6px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      line-height: 1;
+      color: rgba(90, 84, 78, 0.75);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
     .timeline-playhead {
       position: absolute;
       top: 8px;
-      bottom: 20px;
+      bottom: 24px;
       left: 0;
       width: 2px;
       background: var(--timeline-playhead);
@@ -304,7 +345,7 @@
       min-height: 0;
       width: 100%;
       height: 100%;
-      border-radius: 11px 0 0 11px;
+      border-radius: 10px;
       background: unset;
       overflow: hidden;
     }
@@ -312,6 +353,7 @@
     .screen-recess--playback {
       width: 100%;
       height: 100%;
+      background: var(--screen-bg);
     }
 
     .screen-recess--playback .vf-aperture--playback {
@@ -321,13 +363,52 @@
       min-height: 0;
       width: 100%;
       height: 100%;
-      box-sizing: content-box;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 11px;
-      background: unset;
+      box-sizing: border-box;
+      border-radius: 10px;
+      background: var(--screen-bg);
       overflow: hidden;
+    }
+
+    .vf-aperture--playback::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      border-radius: inherit;
+      background: transparent;
+      opacity: 0;
+      transition: background-color 0.4s ease, opacity 0.35s ease;
+    }
+
+    .vf-aperture--playback[data-capture-mood="joy"]::after {
+      background: rgba(255, 220, 0, 0.15);
+      opacity: 1;
+    }
+
+    .vf-aperture--playback[data-capture-mood="sadness"]::after {
+      background: rgba(72, 148, 255, 0.15);
+      opacity: 1;
+    }
+
+    .vf-aperture--playback[data-capture-mood="anger"]::after {
+      background: rgba(255, 58, 38, 0.15);
+      opacity: 1;
+    }
+
+    .vf-aperture--playback[data-capture-mood="disgust"]::after {
+      background: rgba(88, 196, 72, 0.15);
+      opacity: 1;
+    }
+
+    .vf-aperture--playback[data-capture-mood="fear"]::after {
+      background: rgba(156, 88, 220, 0.15);
+      opacity: 1;
+    }
+
+    #playbackViewport {
+      width: 100%;
+      height: 100%;
     }
 
     .playback-media {
@@ -336,13 +417,23 @@
       display: block;
       width: 100%;
       height: 100%;
-      box-sizing: content-box;
-      object-fit: cover;
+      box-sizing: border-box;
+      object-fit: contain;
       object-position: center;
       z-index: 1;
-      background: #000;
+      background: transparent;
       border: none;
       outline: none;
+      filter: none;
+    }
+
+    .vf-aperture--playback,
+    #playbackDisplay {
+      filter: none;
+    }
+
+    #playbackDisplay {
+      height: 100%;
     }
 
     .playback-media[hidden] {
@@ -426,9 +517,10 @@
       display: grid;
       grid-template-columns: auto 1fr;
       gap: 6px;
-      align-items: center;
+      align-items: stretch;
       height: 32px;
       padding: 4px 6px;
+      overflow: hidden;
       background: linear-gradient(180deg, #0c0f13 0%, #090b0f 100%);
       color: rgba(195, 192, 187, 1);
       border-radius: 4px;
@@ -446,22 +538,28 @@
       text-transform: uppercase;
       color: rgba(82, 82, 82, 0.88);
       white-space: nowrap;
+      align-self: center;
     }
 
     .energy-led-track {
       width: 100%;
+      min-height: 0;
+      align-self: stretch;
       display: grid;
       grid-auto-flow: row;
-      grid-template-rows: repeat(5, 1fr);
       gap: 1px;
       align-items: stretch;
       padding: 1px;
+      overflow: hidden;
+      box-sizing: border-box;
       background: rgba(255, 255, 255, 0.07);
     }
 
     .energy-led-seg {
       width: 100%;
-      aspect-ratio: 1;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
       border-radius: 0;
       background: #030405;
       border: none;
@@ -505,6 +603,14 @@
       letter-spacing: 0.02em;
       font-variant-numeric: tabular-nums;
       color: var(--ink);
+    }
+
+    #facialExprReadout {
+      font-size: clamp(11px, 2.2vw, 16px);
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .onboarding-overlay {
@@ -780,6 +886,54 @@
       text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.85);
     }
 
+    .vf-rec-indicator {
+      position: absolute;
+      top: 7px;
+      left: 7px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 5px 2px 4px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.45);
+      font-family: var(--font);
+      font-size: 7px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.16em;
+      color: rgba(255, 255, 255, 0.92);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+
+    .vf-rec-indicator.is-active {
+      opacity: 1;
+    }
+
+    .vf-rec-dot {
+      flex-shrink: 0;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-rec);
+      box-shadow: 0 0 5px var(--accent-rec-glow);
+    }
+
+    .vf-rec-indicator.is-capturing .vf-rec-dot {
+      animation: recDotPulse 1s ease infinite;
+    }
+
+    .vf-rec-label {
+      text-transform: uppercase;
+    }
+
+    .onboarding-overlay:not(.is-done) ~ * .vf-rec-indicator,
+    .device:has(.onboarding-overlay:not(.is-done)) .vf-rec-indicator {
+      opacity: 0 !important;
+    }
+
     #display {
       position: absolute;
       inset: 0;
@@ -1036,7 +1190,7 @@
       box-shadow: var(--neu-out);
     }
 
-    .hw-btn--rec-toggle {
+    .hw-btn--joy-toggle {
       width: 76px;
       height: 34px;
       position: relative;
@@ -1050,7 +1204,7 @@
       overflow: hidden;
     }
 
-    .rec-toggle-pill {
+    .joy-toggle-pill {
       position: absolute;
       left: 42px;
       top: 50%;
@@ -1066,7 +1220,7 @@
       transition: left 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
     }
 
-    .rec-toggle-dot {
+    .joy-toggle-dot {
       position: absolute;
       right: 10px;
       top: 50%;
@@ -1078,23 +1232,15 @@
       box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
     }
 
-    .hw-btn--rec-toggle.is-active .rec-toggle-pill {
+    .hw-btn--joy-toggle.is-active .joy-toggle-pill {
       left: 10px;
-      background: linear-gradient(180deg, #ff3a3a 0%, #de1414 100%);
+      background: linear-gradient(180deg, #ffe045 0%, #e6b800 100%);
       box-shadow:
-        inset 0 1px 1px rgba(255, 210, 210, 0.42),
-        0 0 8px rgba(255, 35, 35, 0.45);
+        inset 0 1px 1px rgba(255, 248, 210, 0.42),
+        0 0 8px rgba(255, 220, 0, 0.45);
     }
 
-    .hw-btn--rec-toggle.is-capturing .rec-toggle-pill {
-      left: 10px;
-      background: linear-gradient(180deg, #ff3a3a 0%, #de1414 100%);
-      box-shadow:
-        inset 0 1px 1px rgba(255, 210, 210, 0.42),
-        0 0 10px rgba(255, 35, 35, 0.5);
-    }
-
-    .hw-btn--rec-toggle:active:not(:disabled) {
+    .hw-btn--joy-toggle:active:not(:disabled) {
       transform: scale(0.985);
       box-shadow:
         inset 0 3px 5px rgba(0, 0, 0, 0.78),
@@ -1102,8 +1248,8 @@
         inset 0 0 0 1px rgba(255, 255, 255, 0.02);
     }
 
-    .hw-btn--rec-toggle:disabled {
-      opacity: 1;
+    .hw-btn--joy-toggle:disabled {
+      opacity: 0.55;
       cursor: default;
     }
 
@@ -1429,8 +1575,11 @@
 
 
     .memory-strip {
+      position: relative;
+      z-index: 1;
       flex: 1;
       min-height: 0;
+      padding-bottom: 22px;
       overflow: hidden;
       cursor: grab;
       touch-action: pan-x;
@@ -1446,34 +1595,6 @@
       align-items: flex-end;
       height: 100%;
       will-change: transform;
-    }
-
-    .memory-strip-ticks {
-      position: absolute;
-      left: var(--panel-content-inset-x);
-      right: 0;
-      top: 0;
-      bottom: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .memory-tick {
-      position: absolute;
-      bottom: 4px;
-      width: 1px;
-      background: rgba(210, 210, 210, 0.35);
-      transform: translateX(-0.5px);
-    }
-
-    .memory-tick.is-major {
-      height: 16px;
-      background: rgba(226, 226, 226, 0.5);
-    }
-
-    .memory-tick.is-minor {
-      height: 9px;
-      background: rgba(190, 190, 190, 0.28);
     }
 
     .memory-strip-balls {
@@ -1492,31 +1613,13 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
-      gap: 4px;
-      padding-top: 8px;
-      padding-left: 1px;
-    }
-
-    .memory-slot-time {
-      font-size: 6px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      line-height: 1;
-      color: rgba(90, 84, 78, 0.75);
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-      pointer-events: none;
-      width: 100%;
-      text-align: left;
-    }
-
-    .memory-slot.is-selected .memory-slot-time {
-      color: rgba(236, 228, 216, 0.82);
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 2px;
     }
 
     .memory-ball {
+      position: relative;
       align-self: center;
       width: var(--ball-size);
       height: var(--ball-size);
@@ -1534,20 +1637,115 @@
         width 0.32s cubic-bezier(0.34, 1.2, 0.64, 1),
         height 0.32s cubic-bezier(0.34, 1.2, 0.64, 1),
         opacity 0.2s ease,
+        filter 0.2s ease,
         box-shadow 0.32s ease,
         border-color 0.2s ease;
       pointer-events: none;
+    }
+
+    .memory-ball.is-filtered {
+      opacity: 0.3;
+      filter: saturate(0.25);
+    }
+
+    .memory-ball::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease, background-color 0.25s ease;
     }
 
     .memory-ball.is-selected {
       width: var(--ball-size-active);
       height: var(--ball-size-active);
       opacity: 1;
-      border-color: rgba(214, 69, 69, 0.5);
+    }
+
+    .memory-ball.is-selected::after {
+      opacity: 0.44;
+    }
+
+    .memory-ball.is-selected[data-capture-mood="joy"],
+    .memory-ball.is-selected:not([data-capture-mood]) {
+      border-color: rgba(255, 220, 0, 0.58);
       box-shadow:
-        0 0 0 2px rgba(214, 69, 69, 0.18),
-        0 0 14px var(--accent-rec-glow),
-        0 0 22px rgba(214, 69, 69, 0.22);
+        0 0 0 2px rgba(255, 220, 0, 0.2),
+        0 0 14px rgba(255, 220, 0, 0.52),
+        0 0 22px rgba(255, 220, 0, 0.28);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="joy"]::after,
+    .memory-ball.is-selected:not([data-capture-mood])::after {
+      background: rgba(255, 220, 0, 0.5);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="sadness"] {
+      border-color: rgba(72, 148, 255, 0.58);
+      box-shadow:
+        0 0 0 2px rgba(72, 148, 255, 0.2),
+        0 0 14px rgba(72, 148, 255, 0.52),
+        0 0 22px rgba(72, 148, 255, 0.28);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="sadness"]::after {
+      background: rgba(72, 148, 255, 0.5);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="anger"] {
+      border-color: rgba(255, 58, 38, 0.58);
+      box-shadow:
+        0 0 0 2px rgba(255, 58, 38, 0.2),
+        0 0 14px rgba(255, 58, 38, 0.52),
+        0 0 22px rgba(255, 58, 38, 0.28);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="anger"]::after {
+      background: rgba(255, 58, 38, 0.5);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="disgust"] {
+      border-color: rgba(88, 196, 72, 0.58);
+      box-shadow:
+        0 0 0 2px rgba(88, 196, 72, 0.2),
+        0 0 14px rgba(88, 196, 72, 0.52),
+        0 0 22px rgba(88, 196, 72, 0.28);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="disgust"]::after {
+      background: rgba(88, 196, 72, 0.5);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="fear"] {
+      border-color: rgba(156, 88, 220, 0.58);
+      box-shadow:
+        0 0 0 2px rgba(156, 88, 220, 0.2),
+        0 0 14px rgba(156, 88, 220, 0.52),
+        0 0 22px rgba(156, 88, 220, 0.28);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="fear"]::after {
+      background: rgba(156, 88, 220, 0.5);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="neutral"] {
+      border-color: rgba(200, 190, 170, 0.55);
+      box-shadow:
+        0 0 0 2px rgba(200, 190, 170, 0.18),
+        0 0 14px rgba(200, 190, 170, 0.38),
+        0 0 22px rgba(200, 190, 170, 0.22);
+    }
+
+    .memory-ball.is-selected[data-capture-mood="neutral"]::after {
+      background: rgba(200, 190, 170, 0.42);
+    }
+
+    .memory-ball.is-selected.is-filtered {
+      opacity: 0.3;
+      filter: saturate(0.25);
     }
 
     .memory-ball.is-new {
@@ -1560,6 +1758,8 @@
     }
 
     .memory-ball img {
+      position: relative;
+      z-index: 0;
       display: block;
       width: 100%;
       height: 100%;
@@ -1676,10 +1876,10 @@
 
     <header class="device-topbar" aria-label="Core memory timeline">
       <div class="timeline-rack empty" id="memoryRack">
+        <div class="timeline-ruler" id="timelineRuler" aria-hidden="true"></div>
         <div class="timeline-playhead" id="timelinePlayhead" aria-hidden="true"></div>
         <div class="memory-strip" id="memoryDial" aria-label="Scroll core memories">
           <div class="memory-strip-track" id="memoryDialStrip">
-            <div class="memory-strip-ticks" id="memoryTicks" aria-hidden="true"></div>
             <div class="memory-strip-balls" id="memoryBalls"></div>
           </div>
         </div>
@@ -1696,6 +1896,10 @@
             <div class="screen-recess screen-recess--live">
               <div class="vf-aperture vf-aperture--live">
                 <canvas id="display"></canvas>
+                <div class="vf-rec-indicator" id="vfRecIndicator" aria-hidden="true" hidden>
+                  <span class="vf-rec-dot" aria-hidden="true"></span>
+                  <span class="vf-rec-label">Rec</span>
+                </div>
                 <div class="vf-alert" id="vfAlert" hidden aria-live="assertive">
                   <p class="vf-alert-line" id="vfAlertLine"></p>
                 </div>
@@ -1727,7 +1931,7 @@
             <div class="readout-row">
               <div class="readout">
                 <span class="readout-label">Facial Expr</span>
-                <span class="readout-value" id="facialExprReadout">00</span>
+                <span class="readout-value" id="facialExprReadout">NEUTRAL</span>
               </div>
               <div class="readout">
                 <span class="readout-label">Movement</span>
@@ -1776,15 +1980,16 @@
               <div class="hw-deck-unit">
                 <button
                   type="button"
-                  class="hw-btn hw-btn--rec-toggle is-active"
-                  id="chipCapture"
-                  title="Save a core memory now"
-                  aria-label="Record core memory"
+                  class="hw-btn hw-btn--joy-toggle"
+                  id="chipJoyFilter"
+                  title="Joy filter off — play all memories"
+                  aria-label="Joy filter"
+                  aria-pressed="false"
                 >
-                  <span class="rec-toggle-pill" aria-hidden="true"></span>
-                  <span class="rec-toggle-dot" aria-hidden="true"></span>
+                  <span class="joy-toggle-pill" aria-hidden="true"></span>
+                  <span class="joy-toggle-dot" aria-hidden="true"></span>
                 </button>
-                <span class="hw-btn-label">Rec</span>
+                <span class="hw-btn-label">Joy</span>
               </div>
               <div class="hw-deck-unit">
                 <button
@@ -1823,9 +2028,15 @@
     let expressionIntensity = 0;
     let targetExpressionIntensity = 0;
     let lastExpressions = null;
-    let moodSadLatch = 0;
-    let moodAngryLatch = 0;
     let moodExpressionStable = "neutral";
+    const INSIDE_OUT_EMOTIONS = ["joy", "sadness", "anger", "disgust", "fear"];
+    const moodEmotionLatches = {
+      joy: 0,
+      sadness: 0,
+      anger: 0,
+      disgust: 0,
+      fear: 0
+    };
 
     const canvas = document.getElementById("display");
     if (!canvas) {
@@ -1845,7 +2056,7 @@
     const playbackDisplay = document.getElementById("playbackDisplay");
     const playbackPlaceholder = document.getElementById("playbackPlaceholder");
     const playbackIdleBody = document.getElementById("playbackIdleBody");
-    const chipCapture = document.getElementById("chipCapture");
+    const chipJoyFilter = document.getElementById("chipJoyFilter");
     const btnPrevRow = document.getElementById("btnPrevRow");
     const btnNextRow = document.getElementById("btnNextRow");
     const btnSlow = document.getElementById("btnSlow");
@@ -1856,22 +2067,24 @@
     const vfGuidance = playbackPlaceholder;
     const vfAlert = document.getElementById("vfAlert");
     const vfAlertLine = document.getElementById("vfAlertLine");
+    const vfRecIndicator = document.getElementById("vfRecIndicator");
     const footerClock = document.getElementById("footerClock");
     const statusLed = document.getElementById("statusLed");
     const memoryRack = document.getElementById("memoryRack");
     const memoryDial = document.getElementById("memoryDial");
     const memoryDialStrip = document.getElementById("memoryDialStrip");
-    const memoryTicks = document.getElementById("memoryTicks");
+    const timelineRuler = document.getElementById("timelineRuler");
     const memoryBalls = document.getElementById("memoryBalls");
     const timelinePlayhead = document.getElementById("timelinePlayhead");
 
     const ENERGY_LED_COLS = 72;
-    const ENERGY_LED_ROWS = 5;
+    const ENERGY_LED_ROWS = 4;
     const ENERGY_LED_SEGMENTS = ENERGY_LED_COLS * ENERGY_LED_ROWS;
     let energyLedSegments = [];
     let playbackAnimTimer = null;
     let playbackAnimBall = null;
     let playbackPaused = false;
+    let joyFilterEnabled = false;
     let reelPlaying = false;
     let reelProgrammatic = false;
     let reelWasActive = false;
@@ -1915,7 +2128,11 @@
     const POST_CAPTURE_MS = 2000;
     const FRAME_SAMPLE_MS = 80;
     const MEMORY_COOLDOWN_MS = 5000;
-    const PEAK_SUSTAIN_MS = 400;
+    const RULER_TICK_INTERVAL_SEC = 5;
+    const RULER_MIN_TICK_SPACING_PX = 24;
+    const PEAK_SUSTAIN_MS = 650;
+    const NEUTRAL_DOMINANCE_MIN = 0.48;
+    const NEUTRAL_DOMINANCE_MARGIN = 0.11;
     const PRE_BUFFER_FRAMES = Math.ceil(PRE_BUFFER_MS / FRAME_SAMPLE_MS);
     const POST_BUFFER_FRAMES = Math.ceil(POST_CAPTURE_MS / FRAME_SAMPLE_MS);
 
@@ -1932,18 +2149,41 @@
     let peakSustainStart = 0;
     let peakEpisodeCaptured = false;
     let lastMemoryAt = 0;
-    let pendingCaptureMood = "happy";
+    let pendingCaptureMood = "neutral";
+    let lastRulerLayoutWidth = 0;
 
     const video = document.getElementById("video");
     const offscreen = document.createElement("canvas");
     const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
+    const rawOffscreen = document.createElement("canvas");
+    const rawCtx = rawOffscreen.getContext("2d");
 
     let displayW = 0;
     let displayH = 0;
-    const MAX_PROCESS_WIDTH = 288;
-    const DETECTION_INTERVAL_MS = 200;
-    const UI_UPDATE_EVERY_N_FRAMES = 4;
-    const ENERGY_UPDATE_EVERY_N_FRAMES = 3;
+    const MAX_PROCESS_WIDTH = 320;
+    const DETECTION_INTERVAL_MS = 300;
+    const EMOTION_MIN_CONFIDENCE = {
+      joy: 0.21,
+      sadness: 0.26,
+      anger: 0.22,
+      disgust: 0.22,
+      fear: 0.22
+    };
+    const EXPRESSION_INTENSITY_PEAK_GATE_JOY = 0.42;
+    const EXPRESSION_INTENSITY_PEAK_GATE_NON_JOY = 0.34;
+    const PEAK_ENERGY_PCT_JOY = 78;
+    const PEAK_ENERGY_PCT_NON_JOY = 72;
+    const MOOD_LATCH_ON_JOY = 0.22;
+    const MOOD_LATCH_ON_NON_JOY = 0.20;
+    const MOOD_LATCH_OFF_JOY = 0.10;
+    const MOOD_LATCH_OFF_NON_JOY = 0.08;
+    const MOOD_LATCH_RISE = 0.42;
+    const MOOD_LATCH_FALL_JOY = 0.22;
+    const MOOD_LATCH_FALL_NON_JOY = 0.14;
+    let detectionInFlight = false;
+    let renderLoopScheduled = false;
+    const UI_UPDATE_EVERY_N_FRAMES = 5;
+    const ENERGY_UPDATE_EVERY_N_FRAMES = 4;
     let uiUpdateFrame = 0;
     let lastEnergyLedActiveCols = -1;
     let lastEnergyLedFillKey = "";
@@ -1970,19 +2210,79 @@
     let motionSpeedEmberTmp = new Float32Array(0);
 
     const detectCanvas = document.createElement("canvas");
-    detectCanvas.width = 192;
-    detectCanvas.height = 144;
+    detectCanvas.width = 160;
+    detectCanvas.height = 120;
     const detectCtx = detectCanvas.getContext("2d", { willReadFrequently: true });
 
-    const expressionScores = {
-      happy: 1.0,
-      surprised: 0.85,
-      neutral: 0.4,
-      fearful: 0.3,
-      angry: 0.2,
-      disgusted: 0.15,
-      sad: 0.1
+    const emotionScores = {
+      joy: 1.0,
+      sadness: 0.85,
+      anger: 0.8,
+      disgust: 0.75,
+      fear: 0.7
     };
+
+    const EMOTION_LATCH_THRESHOLDS = {
+      joy: 0.17,
+      sadness: 0.18,
+      anger: 0.17,
+      disgust: 0.17,
+      fear: 0.17
+    };
+
+    function isNonJoyEmotion(emotion) {
+      return Boolean(emotion && emotion !== "neutral" && emotion !== "joy");
+    }
+
+    function getEmotionMinConfidence(emotion) {
+      return EMOTION_MIN_CONFIDENCE[emotion] ?? EMOTION_MIN_CONFIDENCE.joy;
+    }
+
+    function getMoodLatchOn(emotion) {
+      return isNonJoyEmotion(emotion) ? MOOD_LATCH_ON_NON_JOY : MOOD_LATCH_ON_JOY;
+    }
+
+    function deriveInsideOutScores(expressions) {
+      if (!expressions) {
+        return { joy: 0, sadness: 0, anger: 0, disgust: 0, fear: 0 };
+      }
+      return {
+        joy: expressions.happy || 0,
+        sadness: clamp((expressions.sad || 0) * 1.08, 0, 1),
+        anger: clamp((expressions.angry || 0) * 1.08, 0, 1),
+        disgust: clamp((expressions.disgusted || 0) * 1.08, 0, 1),
+        fear: clamp(Math.max(expressions.fearful || 0, expressions.surprised || 0) * 1.08, 0, 1)
+      };
+    }
+
+    function getDominantInsideOutEmotion(expressions) {
+      if (!expressions) {
+        return { name: "neutral", score: 0.5 };
+      }
+      const scores = deriveInsideOutScores(expressions);
+      let bestName = "neutral";
+      let bestScore = 0;
+      for (const emotion of INSIDE_OUT_EMOTIONS) {
+        const score = scores[emotion] || 0;
+        if (score > bestScore) {
+          bestName = emotion;
+          bestScore = score;
+        }
+      }
+
+      const neutralScore = expressions.neutral || 0;
+      if (
+        neutralScore >= NEUTRAL_DOMINANCE_MIN
+        && bestScore < neutralScore + NEUTRAL_DOMINANCE_MARGIN
+      ) {
+        return { name: "neutral", score: neutralScore };
+      }
+
+      if (bestScore < getEmotionMinConfidence(bestName)) {
+        return { name: "neutral", score: Math.max(neutralScore, bestScore) };
+      }
+      return { name: bestName, score: bestScore };
+    }
 
     const coolPalette = [
       { l: 0,   r: 0,   g: 0,   b: 0   },
@@ -2188,29 +2488,46 @@
       };
     }
 
-    function facePeakColor(expression, heatMix) {
+    function facePeakColor(emotion, heatMix) {
       const t = clamp(heatMix, 0, 1);
-      if (expression === "sad") {
-        // Sad mode peaks in cyan instead of yellow.
-        return {
-          r: Math.round(lerp(58, 118, t)),
-          g: Math.round(lerp(186, 246, t)),
-          b: Math.round(lerp(212, 255, t))
-        };
+      switch (emotion) {
+        case "joy":
+          return {
+            r: 255,
+            g: Math.round(lerp(200, 252, t)),
+            b: Math.round(lerp(55, 72, t))
+          };
+        case "sadness":
+          return {
+            r: Math.round(lerp(40, 72, t)),
+            g: Math.round(lerp(120, 180, t)),
+            b: Math.round(lerp(200, 255, t))
+          };
+        case "anger":
+          return {
+            r: 255,
+            g: Math.round(lerp(72, 26, t)),
+            b: Math.round(lerp(48, 16, t))
+          };
+        case "disgust":
+          return {
+            r: Math.round(lerp(48, 88, t)),
+            g: Math.round(lerp(160, 228, t)),
+            b: Math.round(lerp(48, 72, t))
+          };
+        case "fear":
+          return {
+            r: Math.round(lerp(108, 180, t)),
+            g: Math.round(lerp(48, 82, t)),
+            b: Math.round(lerp(180, 255, t))
+          };
+        default:
+          return {
+            r: 255,
+            g: Math.round(lerp(200, 212, t)),
+            b: Math.round(lerp(55, 72, t))
+          };
       }
-      if (expression === "angry") {
-        // Angry mode peaks in red.
-        return {
-          r: 255,
-          g: Math.round(lerp(72, 26, t)),
-          b: Math.round(lerp(48, 16, t))
-        };
-      }
-      return {
-        r: 255,
-        g: Math.round(lerp(200, 212, t)),
-        b: Math.round(lerp(55, 72, t))
-      };
     }
 
     function samplePalette(palette, luminance) {
@@ -2338,10 +2655,12 @@
       ctx.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0);
       ctx.imageSmoothingEnabled = true;
 
-      const procW = Math.max(240, Math.min(MAX_PROCESS_WIDTH, displayW));
+      const procW = Math.max(160, Math.min(MAX_PROCESS_WIDTH, displayW));
       const procH = Math.max(1, Math.round((procW / displayW) * displayH));
       offscreen.width = procW;
       offscreen.height = procH;
+      rawOffscreen.width = procW;
+      rawOffscreen.height = procH;
       canvasLayoutReady = true;
 
       if (!resizeCanvases.logged) {
@@ -2381,150 +2700,136 @@
 
     function isEmotionallyNeutral(expressions) {
       if (!expressions) return true;
-      const neutral = expressions.neutral || 0;
-      const happy = expressions.happy || 0;
-      const sad = expressions.sad || 0;
-      const surprised = expressions.surprised || 0;
-      const angry = expressions.angry || 0;
-      const fearful = expressions.fearful || 0;
-      const disgusted = expressions.disgusted || 0;
-      const emotionPeak = Math.max(happy, sad, surprised, angry, fearful, disgusted);
-      if (neutral >= 0.45 && neutral >= emotionPeak + 0.05) return true;
-      if (neutral >= 0.38 && neutral >= emotionPeak - 0.02) return true;
-      if (emotionPeak < 0.28) return true;
-      if (emotionPeak < 0.38 && neutral >= 0.3) return true;
-      return false;
-    }
-
-    function computePositiveIntensity(expressions) {
-      const happy = expressions.happy || 0;
-      const surprised = expressions.surprised || 0;
-      const neutral = expressions.neutral || 0;
-      const sad = expressions.sad || 0;
-      const angry = expressions.angry || 0;
-      if (isEmotionallyNeutral(expressions)) return 0;
-      if (happy < 0.5 && surprised < 0.48) return 0;
-      if (neutral > 0.34 && happy < 0.58 && surprised < 0.54) return 0;
-      const positiveSignal = (happy * 1.06) + (surprised * 0.72);
-      const dampen = (neutral * 0.68) + (sad * 0.18) + (angry * 0.12);
-      const raw = positiveSignal - dampen;
-      if (raw < 0.34) return 0;
-      return clamp(Math.pow(clamp(raw, 0, 1) / 0.96, 1.24), 0, 1);
-    }
-
-    function computeSadIntensity(expressions) {
-      const sad = expressions.sad || 0;
-      const fearful = expressions.fearful || 0;
-      const neutral = expressions.neutral || 0;
-      const happy = expressions.happy || 0;
-      const angry = expressions.angry || 0;
-      if (isEmotionallyNeutral(expressions)) return 0;
-      if (sad < 0.48 && fearful < 0.44) return 0;
-      if (neutral > 0.34 && sad < 0.54 && fearful < 0.48) return 0;
-      const sadSignal = (sad * 1.2) + (fearful * 0.42);
-      const dampen = (neutral * 0.64) + (happy * 0.22) + (angry * 0.12);
-      const raw = sadSignal - dampen;
-      if (raw < 0.32) return 0;
-      return clamp(Math.pow(clamp(raw, 0, 1) / 0.94, 1.18), 0, 1);
+      const scores = deriveInsideOutScores(expressions);
+      for (const emotion of INSIDE_OUT_EMOTIONS) {
+        if ((scores[emotion] || 0) >= getEmotionMinConfidence(emotion)) return false;
+      }
+      return true;
     }
 
     function computeExpressionIntensity(expressions) {
-      if (isEmotionallyNeutral(expressions)) return 0;
-      const positive = computePositiveIntensity(expressions);
-      const sad = computeSadIntensity(expressions);
-      const sadRaw = expressions.sad || 0;
+      const dominant = getDominantInsideOutEmotion(expressions);
+      if (dominant.name === "neutral") return 0;
+      const scores = deriveInsideOutScores(expressions);
+      const dominantScore = scores[dominant.name] || 0;
       const neutral = expressions.neutral || 0;
-      const useSadPath = moodExpressionStable === "sad"
-        && sadRaw > 0.32
-        && sadRaw > neutral - 0.05;
-      return useSadPath ? Math.max(sad, positive * 0.08) : Math.max(positive, sad * 0.08);
-    }
-
-    function getLiveExpression(expressions) {
-      if (isEmotionallyNeutral(expressions)) {
-        return { name: "neutral", score: expressions.neutral || 0.5 };
-      }
-      let bestName = "neutral";
-      let bestScore = 0;
-      const neutralScore = expressions.neutral || 0;
-      for (const [name, score] of Object.entries(expressions)) {
-        if (score > bestScore) {
-          bestName = name;
-          bestScore = score;
-        }
-      }
-      if (
-        bestName !== "neutral" &&
-        neutralScore > bestScore - 0.07 &&
-        neutralScore > 0.32
-      ) {
-        bestName = "neutral";
-        bestScore = neutralScore;
-      }
-      if (bestScore < 0.38) {
-        bestName = "neutral";
-        bestScore = Math.max(neutralScore, bestScore);
-      }
-      return { name: bestName, score: bestScore };
+      const nonJoy = isNonJoyEmotion(dominant.name);
+      const neutralDampen = nonJoy ? 0.18 : 0.22;
+      const rawFloor = nonJoy ? 0.11 : 0.10;
+      const raw = dominantScore - (neutral * neutralDampen);
+      if (raw < rawFloor) return 0;
+      let intensity = clamp(
+        Math.pow(clamp(raw, 0, 1) / (nonJoy ? 0.88 : 0.92), nonJoy ? 1.08 : 1.12),
+        0,
+        1
+      );
+      return intensity;
     }
 
     function updateMoodState(expressions) {
-      const sadRaw = clamp(expressions?.sad || 0, 0, 1);
-      const angryRaw = clamp(expressions?.angry || 0, 0, 1);
       const neutralRaw = clamp(expressions?.neutral || 0, 0, 1);
+      const scores = deriveInsideOutScores(expressions);
 
-      const sadTarget = sadRaw > 0.24 ? sadRaw : 0;
-      const angryTarget = angryRaw > 0.32 ? angryRaw : 0;
-
-      moodSadLatch = lerp(moodSadLatch, sadTarget, sadTarget > moodSadLatch ? 0.34 : 0.06);
-      moodAngryLatch = lerp(moodAngryLatch, angryTarget, angryTarget > moodAngryLatch ? 0.28 : 0.06);
-
-      if (neutralRaw > 0.42 && neutralRaw > sadRaw + 0.1 && neutralRaw > angryRaw + 0.08) {
-        moodSadLatch = lerp(moodSadLatch, 0, 0.28);
-        moodAngryLatch = lerp(moodAngryLatch, 0, 0.24);
-        if (moodSadLatch < 0.28 && moodAngryLatch < 0.28) moodExpressionStable = "neutral";
+      for (const emotion of INSIDE_OUT_EMOTIONS) {
+        const raw = clamp(scores[emotion] || 0, 0, 1);
+        const threshold = EMOTION_LATCH_THRESHOLDS[emotion];
+        const target = raw > threshold ? raw : 0;
+        const latch = moodEmotionLatches[emotion];
+        const fall = emotion === "joy" ? MOOD_LATCH_FALL_JOY : MOOD_LATCH_FALL_NON_JOY;
+        moodEmotionLatches[emotion] = lerp(latch, target, target > latch ? MOOD_LATCH_RISE : fall);
       }
 
-      if (moodExpressionStable === "sad") {
-        if (moodSadLatch < 0.2 && moodAngryLatch > 0.48) moodExpressionStable = "angry";
-        else if (moodSadLatch < 0.16) moodExpressionStable = "neutral";
-      } else if (moodExpressionStable === "angry") {
-        if (moodAngryLatch < 0.2 && moodSadLatch > 0.48) moodExpressionStable = "sad";
-        else if (moodAngryLatch < 0.16) moodExpressionStable = "neutral";
+      if (neutralRaw > 0.55) {
+        const maxLatch = Math.max(...INSIDE_OUT_EMOTIONS.map((emotion) => moodEmotionLatches[emotion]));
+        if (neutralRaw > maxLatch + 0.12) {
+          for (const emotion of INSIDE_OUT_EMOTIONS) {
+            const fall = emotion === "joy" ? 0.28 : 0.12;
+            moodEmotionLatches[emotion] = lerp(moodEmotionLatches[emotion], 0, fall);
+          }
+        }
+      }
+
+      let strongest = "neutral";
+      let strongestVal = 0;
+      for (const emotion of INSIDE_OUT_EMOTIONS) {
+        if (moodEmotionLatches[emotion] > strongestVal) {
+          strongestVal = moodEmotionLatches[emotion];
+          strongest = emotion;
+        }
+      }
+
+      const live = getDominantInsideOutEmotion(expressions);
+      if (live.name !== "neutral" && live.score >= getEmotionMinConfidence(live.name)) {
+        moodEmotionLatches[live.name] = Math.max(moodEmotionLatches[live.name], live.score);
+        if (live.score > strongestVal) {
+          strongest = live.name;
+          strongestVal = live.score;
+        }
+      }
+
+      if (moodExpressionStable === "neutral") {
+        if (strongestVal >= getMoodLatchOn(strongest)) moodExpressionStable = strongest;
       } else {
-        if (moodSadLatch > 0.48 && moodSadLatch > moodAngryLatch + 0.08 && sadRaw > 0.34 && sadRaw > neutralRaw - 0.06) {
-          moodExpressionStable = "sad";
-        } else if (moodAngryLatch > 0.52 && moodAngryLatch > moodSadLatch + 0.08) {
-          moodExpressionStable = "angry";
+        const stableVal = moodEmotionLatches[moodExpressionStable] || 0;
+        const offThreshold = isNonJoyEmotion(moodExpressionStable)
+          ? MOOD_LATCH_OFF_NON_JOY
+          : MOOD_LATCH_OFF_JOY;
+        if (stableVal < offThreshold) {
+          moodExpressionStable = strongestVal >= getMoodLatchOn(strongest) ? strongest : "neutral";
+        } else if (strongest !== moodExpressionStable) {
+          const joyReplacingNonJoy = strongest === "joy" && isNonJoyEmotion(moodExpressionStable);
+          const margin = joyReplacingNonJoy ? 0.22 : (isNonJoyEmotion(strongest) ? 0.14 : 0.12);
+          if (strongestVal > stableVal + margin) moodExpressionStable = strongest;
         }
       }
     }
 
+    function getActiveDisplayEmotion() {
+      if (!lastExpressions) return "neutral";
+      const neutralScore = lastExpressions.neutral || 0;
+      const scores = deriveInsideOutScores(lastExpressions);
+      const dominant = getDominantInsideOutEmotion(lastExpressions);
+
+      const isEmotionActive = (emotion) => {
+        if (!emotion || emotion === "neutral") return false;
+        const score = scores[emotion] || 0;
+        const latch = moodEmotionLatches[emotion] || 0;
+        return score >= getEmotionMinConfidence(emotion) * 0.92
+          && latch >= getMoodLatchOn(emotion) * 0.88
+          && neutralScore < NEUTRAL_DOMINANCE_MIN + 0.06;
+      };
+
+      if (isEmotionActive(moodExpressionStable)) return moodExpressionStable;
+      if (isEmotionActive(dominant.name)) return dominant.name;
+      if (isEmotionActive(lastDetection?.expression)) return lastDetection.expression;
+      return "neutral";
+    }
+
     function updateLiveEnergy() {
-      const isSad = moodExpressionStable === "sad";
-      const isNeutral = isEmotionallyNeutral(lastExpressions)
-        || lastDetection?.expression === "neutral";
+      const activeEmotion = getActiveDisplayEmotion();
+      const nonJoy = isNonJoyEmotion(activeEmotion);
+      const isNeutral = activeEmotion === "neutral" || isEmotionallyNeutral(lastExpressions);
       const intensityTarget = isNeutral ? 0 : targetExpressionIntensity;
       const intLerp = intensityTarget > expressionIntensity
-        ? (isSad ? 0.22 : 0.18)
-        : (isNeutral ? 0.4 : 0.2);
+        ? (nonJoy ? 0.46 : 0.28)
+        : (isNeutral ? 0.4 : (nonJoy ? 0.18 : 0.24));
       expressionIntensity = lerp(expressionIntensity, intensityTarget, intLerp);
-      if (isNeutral) expressionIntensity = Math.min(expressionIntensity, 0.04);
-      const faceLerp = targetFaceScore > faceScore ? 0.28 : 0.1;
+      if (isNeutral) expressionIntensity = Math.min(expressionIntensity, 0.05);
+      const faceLerp = targetFaceScore > faceScore ? 0.32 : 0.12;
       faceScore = lerp(faceScore, targetFaceScore, faceLerp);
-      const intensityWindow = clamp((expressionIntensity - 0.18) / 0.82, 0, 1);
-      const curvePow = isSad ? 1.34 : 1.54;
+      const intensityWindow = clamp((expressionIntensity - (nonJoy ? 0.08 : 0.10)) / 0.90, 0, 1);
+      const curvePow = nonJoy ? 1.02 : 1.22;
       const emotionCurve = Math.pow(intensityWindow, curvePow);
-      const confidence = clamp(((lastDetection?.probability || 0) - 0.55) / 0.45, 0, 1);
-      const topCap = clamp(0.88 + (Math.pow(confidence, 1.4) * 0.12), 0.88, 1);
-      const expressionEnergy = lerp(0.03, topCap, emotionCurve);
+      const confidence = clamp(((lastDetection?.probability || 0) - (nonJoy ? 0.14 : 0.18)) / 0.86, 0, 1);
+      const topCap = clamp((nonJoy ? 0.82 : 0.78) + (Math.pow(confidence, 1.12) * (nonJoy ? 0.12 : 0.16)), 0.78, 0.94);
+      const expressionEnergy = lerp(nonJoy ? 0.10 : 0.06, topCap, emotionCurve);
       const nextEnergy = clamp(expressionEnergy, 0, 1);
       const energyLerp = isNeutral
-        ? 0.36
-        : (nextEnergy > energyScore ? (isSad ? 0.22 : 0.18) : 0.22);
+        ? 0.42
+        : (nextEnergy > energyScore ? (nonJoy ? 0.28 : 0.20) : (nonJoy ? 0.14 : 0.20));
       energyScore = lerp(energyScore, nextEnergy, energyLerp);
       if (nextEnergy >= 0.995) energyScore = Math.max(energyScore, nextEnergy);
-      if (isNeutral) energyScore = Math.min(energyScore, 0.22);
+      if (isNeutral) energyScore = Math.min(energyScore, 0.16);
       rebuildActiveLUT();
     }
 
@@ -2549,62 +2854,105 @@
     }
 
     function hasStrongEmotionSignal(expressions) {
-      if (!expressions || isEmotionallyNeutral(expressions)) return false;
-      const happy = expressions.happy || 0;
-      const surprised = expressions.surprised || 0;
-      const sad = expressions.sad || 0;
-      const fearful = expressions.fearful || 0;
-      const neutral = expressions.neutral || 0;
-      if (moodExpressionStable === "sad") {
-        return sad >= 0.44 && sad > happy + 0.08 && sad > neutral - 0.04;
-      }
-      const peakPositive = Math.max(happy, surprised);
-      return peakPositive >= 0.4 && peakPositive > neutral + 0.06;
+      if (!expressions) return false;
+      const dominant = getDominantInsideOutEmotion(expressions);
+      if (dominant.name === "neutral") return false;
+      const scores = deriveInsideOutScores(expressions);
+      const score = scores[dominant.name] || 0;
+      const latch = moodEmotionLatches[dominant.name] || 0;
+      return score >= getEmotionMinConfidence(dominant.name) * 0.92
+        && latch >= getMoodLatchOn(dominant.name) * 0.88;
     }
 
     function isAtPeakEnergy() {
       if (peopleCount === 0 && !lastFaceBox) return false;
-      if (!lastExpressions || isEmotionallyNeutral(lastExpressions)) return false;
-      if (!lastDetection || lastDetection.expression === "neutral") return false;
-      if (expressionIntensity < 0.78) return false;
+      if (!lastExpressions) return false;
+      const activeEmotion = getActiveDisplayEmotion();
+      if (activeEmotion === "neutral") return false;
+      const neutralScore = lastExpressions.neutral || 0;
+      if (neutralScore >= 0.52) return false;
+      const nonJoy = isNonJoyEmotion(activeEmotion);
+      const peakGate = nonJoy
+        ? EXPRESSION_INTENSITY_PEAK_GATE_NON_JOY
+        : EXPRESSION_INTENSITY_PEAK_GATE_JOY;
+      if (expressionIntensity < peakGate) return false;
       if (!hasStrongEmotionSignal(lastExpressions)) return false;
-      if (getEnergyDisplayPercent() < 85) return false;
+      const energyGate = nonJoy ? PEAK_ENERGY_PCT_NON_JOY : PEAK_ENERGY_PCT_JOY;
+      if (getEnergyDisplayPercent() < energyGate) return false;
 
-      const happy = lastExpressions.happy || 0;
-      const sad = lastExpressions.sad || 0;
-      const surprised = lastExpressions.surprised || 0;
-      const neutral = lastExpressions.neutral || 0;
-
-      if (moodExpressionStable === "sad") {
-        return sad >= 0.4
-          && sad > happy + 0.06
-          && moodSadLatch >= 0.52;
-      }
-
-      const peakPositive = Math.max(happy, surprised);
-      return peakPositive >= 0.42
-        && peakPositive > neutral + 0.06
-        && (happy >= 0.38 || surprised >= 0.36);
+      const scores = deriveInsideOutScores(lastExpressions);
+      const score = scores[activeEmotion] || 0;
+      const latch = moodEmotionLatches[activeEmotion] || 0;
+      return score >= getEmotionMinConfidence(activeEmotion) * 0.92
+        && latch >= getMoodLatchOn(activeEmotion) * 0.88;
     }
 
     function getCaptureMood() {
-      if (moodExpressionStable === "sad") return "sad";
-      const ex = lastExpressions;
-      if (ex) {
-        const sadI = computeSadIntensity(ex);
-        const happyI = computePositiveIntensity(ex);
-        if (sadI > happyI + 0.06) return "sad";
-      }
-      if (moodSadLatch >= 0.52 && moodSadLatch > moodAngryLatch + 0.05) return "sad";
-      return "happy";
+      const active = getActiveDisplayEmotion();
+      return active === "neutral" ? "neutral" : active;
+    }
+
+    function normalizeCaptureMood(mood) {
+      if (!mood) return "neutral";
+      const resolved = String(mood).toLowerCase();
+      if (resolved === "happy") return "joy";
+      if (resolved === "sad") return "sadness";
+      if (INSIDE_OUT_EMOTIONS.includes(resolved)) return resolved;
+      return "neutral";
     }
 
     function applyBallMood(ball, mood) {
       if (!ball) return;
-      const resolved = mood === "sad" ? "sad" : "happy";
+      const emotion = normalizeCaptureMood(mood);
+      ball.dataset.captureMood = emotion;
       ball.classList.remove("mood-happy", "mood-sad");
-      ball.classList.add(resolved === "sad" ? "mood-sad" : "mood-happy");
-      ball.dataset.captureMood = resolved;
+      ball.classList.add(emotion === "sadness" ? "mood-sad" : "mood-happy");
+      ball.classList.toggle("is-filtered", shouldFilterBall(ball));
+    }
+
+    function applyPlaybackMoodTint(ball) {
+      if (!playbackViewport) return;
+      if (!ball) {
+        playbackViewport.removeAttribute("data-capture-mood");
+        return;
+      }
+      const emotion = normalizeCaptureMood(ball.dataset.captureMood);
+      if (emotion === "neutral") {
+        playbackViewport.removeAttribute("data-capture-mood");
+        return;
+      }
+      playbackViewport.dataset.captureMood = emotion;
+    }
+
+    function isJoyCaptureMood(mood) {
+      return normalizeCaptureMood(mood) === "joy";
+    }
+
+    function shouldFilterBall(ball) {
+      return joyFilterEnabled && ball && !isJoyCaptureMood(ball.dataset.captureMood);
+    }
+
+    function applyJoyFilterToTimeline() {
+      if (!memoryBalls) return;
+      memoryBalls.querySelectorAll(".memory-ball").forEach((ball) => {
+        ball.classList.toggle("is-filtered", shouldFilterBall(ball));
+      });
+    }
+
+    function toggleJoyFilter() {
+      joyFilterEnabled = !joyFilterEnabled;
+      if (chipJoyFilter) {
+        chipJoyFilter.classList.toggle("is-active", joyFilterEnabled);
+        chipJoyFilter.setAttribute("aria-pressed", joyFilterEnabled ? "true" : "false");
+        chipJoyFilter.title = joyFilterEnabled
+          ? "Joy filter on — playing joy memories only"
+          : "Joy filter off — play all memories";
+      }
+      applyJoyFilterToTimeline();
+      if (reelPlaying && !playbackPaused) {
+        stopPlaybackScreen();
+        playReelFromIndex(getSelectedDialIndex());
+      }
     }
 
     function buildSegDigit(char) {
@@ -2664,8 +3012,8 @@
 
     function initEnergyLedBar() {
       if (!energyLedTrack) return;
-      energyLedTrack.style.gridTemplateColumns = `repeat(${ENERGY_LED_COLS}, 1fr)`;
-      energyLedTrack.style.gridTemplateRows = `repeat(${ENERGY_LED_ROWS}, 1fr)`;
+      energyLedTrack.style.gridTemplateColumns = `repeat(${ENERGY_LED_COLS}, minmax(0, 1fr))`;
+      energyLedTrack.style.gridTemplateRows = `repeat(${ENERGY_LED_ROWS}, minmax(0, 1fr))`;
       energyLedTrack.replaceChildren();
       energyLedSegments = [];
       for (let i = 0; i < ENERGY_LED_SEGMENTS; i += 1) {
@@ -2716,8 +3064,9 @@
       }
     }
 
-    function getFacialExprDisplayValue() {
-      return Math.round(clamp(expressionIntensity, 0, 1) * 100);
+    function getFacialExprDisplayLabel() {
+      const active = getActiveDisplayEmotion();
+      return active === "neutral" ? "NEUTRAL" : active.toUpperCase();
     }
 
     function getMovementDisplayValue() {
@@ -2726,11 +3075,22 @@
 
     function updateReadouts() {
       if (facialExprReadout) {
-        facialExprReadout.textContent = String(getFacialExprDisplayValue()).padStart(2, "0");
+        facialExprReadout.textContent = getFacialExprDisplayLabel();
       }
       if (movementReadout) {
         movementReadout.textContent = String(getMovementDisplayValue()).padStart(2, "0");
       }
+    }
+
+    function updateRecIndicator() {
+      if (!vfRecIndicator) return;
+      const forming = captureBusy || captureFinalizing;
+      const atPeak = isAtPeakEnergy();
+      const visible = forming || atPeak;
+      vfRecIndicator.hidden = !visible;
+      vfRecIndicator.classList.toggle("is-active", visible);
+      vfRecIndicator.classList.toggle("is-capturing", forming);
+      vfRecIndicator.setAttribute("aria-hidden", visible ? "false" : "true");
     }
 
     function updateInstrumentUI() {
@@ -2742,15 +3102,14 @@
       updateReadouts();
 
       const memoryCount = getDialBallCount();
-      const capturing = captureBusy || captureFinalizing;
 
-      if (chipCapture) {
-        chipCapture.disabled = capturing;
-        chipCapture.classList.toggle("is-active", (atCore || energyHot) && !capturing);
-        chipCapture.classList.toggle("is-capturing", capturing);
-        chipCapture.title = capturing
-          ? "Recording core memory…"
-          : "Save a core memory now";
+      if (chipJoyFilter) {
+        chipJoyFilter.disabled = memoryCount === 0;
+        chipJoyFilter.classList.toggle("is-active", joyFilterEnabled);
+        chipJoyFilter.setAttribute("aria-pressed", joyFilterEnabled ? "true" : "false");
+        chipJoyFilter.title = joyFilterEnabled
+          ? "Joy filter on — playing joy memories only"
+          : "Joy filter off — play all memories";
       }
       if (btnPrevRow) btnPrevRow.disabled = memoryCount === 0;
       if (btnNextRow) btnNextRow.disabled = memoryCount === 0;
@@ -2761,6 +3120,7 @@
       if (btnReset) btnReset.disabled = memoryCount === 0;
 
       if (statusLed) statusLed.classList.toggle("is-warn", !modelsReady || peopleCount === 0);
+      updateRecIndicator();
     }
 
     function cloneCanvasSource(source) {
@@ -2778,12 +3138,13 @@
     }
 
     function cloneFrameCanvas() {
-      return cloneCanvasSource(offscreen);
+      const source = rawOffscreen.width >= 1 && rawOffscreen.height >= 1 ? rawOffscreen : offscreen;
+      return cloneCanvasSource(source);
     }
 
     function pushFrameSample(now) {
       if (now - lastFrameSampleAt < FRAME_SAMPLE_MS) return;
-      if (offscreen.width < 1 || offscreen.height < 1) return;
+      if (rawOffscreen.width < 1 || rawOffscreen.height < 1) return;
       lastFrameSampleAt = now;
       try {
         frameRing.push(cloneFrameCanvas());
@@ -2794,39 +3155,53 @@
       }
     }
 
+    function getMemoryExportSize(sourceW, sourceH, maxW = GIF_OUT_WIDTH, maxH = GIF_OUT_HEIGHT) {
+      if (!sourceW || !sourceH) return { w: maxW, h: maxH };
+      const scale = Math.min(maxW / sourceW, maxH / sourceH);
+      return {
+        w: Math.max(1, Math.round(sourceW * scale)),
+        h: Math.max(1, Math.round(sourceH * scale))
+      };
+    }
+
+    function renderFrameToExportCanvas(source, outW, outH) {
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const cctx = canvas.getContext("2d");
+      cctx.imageSmoothingEnabled = true;
+      cctx.imageSmoothingQuality = "high";
+      const sw = source?.width || 0;
+      const sh = source?.height || 0;
+      if (!sw || !sh) return canvas;
+      const scale = Math.min(outW / sw, outH / sh);
+      const dw = sw * scale;
+      const dh = sh * scale;
+      cctx.fillStyle = "#000000";
+      cctx.fillRect(0, 0, outW, outH);
+      cctx.drawImage(source, (outW - dw) / 2, (outH - dh) / 2, dw, dh);
+      return canvas;
+    }
+
     function prepareGifFrames(frames) {
       const maxFrames = 16;
       const step = frames.length > maxFrames ? Math.ceil(frames.length / maxFrames) : 1;
-      const out = [];
+      const sampled = [];
       for (let i = 0; i < frames.length; i += step) {
         const source = frames[i];
         if (!source?.width || !source?.height) continue;
-        const canvas = document.createElement("canvas");
-        canvas.width = GIF_OUT_WIDTH;
-        canvas.height = GIF_OUT_HEIGHT;
-        const cctx = canvas.getContext("2d");
-        cctx.imageSmoothingEnabled = true;
-        cctx.imageSmoothingQuality = "high";
-        cctx.drawImage(source, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
-        out.push(canvas);
+        sampled.push(source);
       }
-      if (!out.length) {
+      if (!sampled.length) {
         const fallback = cloneFrameCanvas();
-        const canvas = document.createElement("canvas");
-        canvas.width = GIF_OUT_WIDTH;
-        canvas.height = GIF_OUT_HEIGHT;
-        const cctx = canvas.getContext("2d");
-        cctx.imageSmoothingEnabled = true;
-        cctx.imageSmoothingQuality = "high";
-        cctx.drawImage(fallback, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
-        out.push(canvas);
+        if (fallback?.width && fallback?.height) sampled.push(fallback);
       }
+      if (!sampled.length) return [];
+
+      const { w: outW, h: outH } = getMemoryExportSize(sampled[0].width, sampled[0].height);
+      const out = sampled.map((source) => renderFrameToExportCanvas(source, outW, outH));
       if (out.length === 1) {
-        const dup = document.createElement("canvas");
-        dup.width = GIF_OUT_WIDTH;
-        dup.height = GIF_OUT_HEIGHT;
-        dup.getContext("2d").drawImage(out[0], 0, 0);
-        out.push(dup);
+        out.push(renderFrameToExportCanvas(sampled[0], outW, outH));
       }
       return out;
     }
@@ -2834,13 +3209,8 @@
     function frameToPreviewUrl(frame) {
       try {
         if (!frame?.width || !frame?.height) return null;
-        const out = document.createElement("canvas");
-        out.width = GIF_OUT_WIDTH;
-        out.height = GIF_OUT_HEIGHT;
-        const octx = out.getContext("2d");
-        octx.imageSmoothingEnabled = true;
-        octx.imageSmoothingQuality = "high";
-        octx.drawImage(frame, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
+        const { w, h } = getMemoryExportSize(frame.width, frame.height);
+        const out = renderFrameToExportCanvas(frame, w, h);
         return out.toDataURL("image/webp", 0.96);
       } catch {
         return null;
@@ -3010,6 +3380,22 @@
       showSelectedBallPreview(getSelectedMemoryBall());
     }
 
+    function getReelLoopStartIndex() {
+      const balls = memoryBalls ? [...memoryBalls.querySelectorAll(".memory-ball")] : [];
+      for (let i = 0; i < balls.length; i += 1) {
+        if (!shouldFilterBall(balls[i])) return i;
+      }
+      return 0;
+    }
+
+    function hasPlayableReelBalls(fromIndex = 0) {
+      const balls = memoryBalls ? [...memoryBalls.querySelectorAll(".memory-ball")] : [];
+      for (let i = fromIndex; i < balls.length; i += 1) {
+        if (!shouldFilterBall(balls[i])) return true;
+      }
+      return false;
+    }
+
     function finishMemoryReel() {
       const n = getDialBallCount();
       reelHoldProgress = 1;
@@ -3022,6 +3408,27 @@
       stopPlaybackScreen();
       if (btnPlay) btnPlay.classList.remove("is-active");
       showSelectedBallPreview(getSelectedMemoryBall());
+    }
+
+    function loopMemoryReel() {
+      if (!reelPlaying || playbackPaused) return;
+      const start = getReelLoopStartIndex();
+      if (!hasPlayableReelBalls(start)) {
+        finishMemoryReel();
+        return;
+      }
+
+      stopContinuousPlayhead();
+      reelStartIndex = start;
+      selectedDialIndex = start;
+      playheadIndex = start;
+      reelHoldProgress = 0;
+      reelStartTimestamp = performance.now();
+      reelTotalDurationMs = getReelDurationMs(start);
+      applyDialSelection(start);
+      updateTimelinePlayheadProgress(0, false);
+      startContinuousPlayhead();
+      playReelFromIndex(start);
     }
 
     function getReelPlayStartIndex() {
@@ -3064,24 +3471,27 @@
         playbackDisplay.hidden = true;
       }
       playbackViewport?.classList.remove("has-media");
+      applyPlaybackMoodTint(null);
     }
 
-    function showPlaybackStill(src) {
+    function showPlaybackStill(src, ball) {
       if (!playbackDisplay || !src) return;
       stopPlaybackScreen();
       playbackDisplay.src = src;
       playbackDisplay.hidden = false;
       playbackViewport?.classList.add("has-media");
+      applyPlaybackMoodTint(ball || getSelectedMemoryBall());
     }
 
     function playPlaybackFrameLoop(ball) {
       const urls = getFramePreviewCache(ball);
       if (!playbackDisplay || urls.length < 2) {
-        if (urls[0]) showPlaybackStill(urls[0]);
+        if (urls[0]) showPlaybackStill(urls[0], ball);
         return;
       }
       stopPlaybackScreen();
       playbackAnimBall = ball;
+      applyPlaybackMoodTint(ball);
       let frameIndex = 0;
       const step = () => {
         if (playbackAnimBall !== ball || !ball.classList.contains("is-selected")) return;
@@ -3101,6 +3511,7 @@
       }
       stopPlaybackScreen();
       playbackAnimBall = ball;
+      applyPlaybackMoodTint(ball);
 
       const urls = getBallPlayFrameUrls(ball);
       const poster = ball.dataset.posterUrl || "";
@@ -3139,18 +3550,18 @@
           if (reelPlaying && !reelSegment()) return;
           playbackDisplay.onerror = () => {
             playbackDisplay.onerror = null;
-            if (poster) showPlaybackStill(poster);
+            if (poster) showPlaybackStill(poster, ball);
             finish();
           };
           const needsRestart = playbackDisplay.src === gifUrl;
           if (needsRestart) {
             playbackDisplay.src = "";
             requestAnimationFrame(() => {
-              showPlaybackStill(gifUrl);
+              showPlaybackStill(gifUrl, ball);
               reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
             });
           } else {
-            showPlaybackStill(gifUrl);
+            showPlaybackStill(gifUrl, ball);
             reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
           }
         };
@@ -3164,14 +3575,14 @@
           if (playbackAnimBall === ball && (!reelPlaying || reelSegment())) startGif();
         };
         probe.onerror = () => {
-          if (poster) showPlaybackStill(poster);
+          if (poster) showPlaybackStill(poster, ball);
           reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
         };
         probe.src = gifUrl;
         return;
       }
 
-      if (poster) showPlaybackStill(poster);
+      if (poster) showPlaybackStill(poster, ball);
       reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
     }
 
@@ -3179,10 +3590,14 @@
       if (!reelPlaying || playbackPaused) return;
       const balls = [...memoryBalls.querySelectorAll(".memory-ball")];
       if (index >= balls.length) {
-        finishMemoryReel();
+        loopMemoryReel();
         return;
       }
       const ball = balls[index];
+      if (shouldFilterBall(ball)) {
+        playReelFromIndex(index + 1);
+        return;
+      }
       selectedDialIndex = index;
       playheadIndex = index;
       applyDialSelection(index);
@@ -3218,7 +3633,7 @@
         return;
       }
       const poster = ball.dataset.posterUrl || "";
-      if (poster) showPlaybackStill(poster);
+      if (poster) showPlaybackStill(poster, ball);
       else clearPlaybackScreen();
     }
 
@@ -3233,13 +3648,15 @@
           return;
         }
         const gifFrames = prepareGifFrames(frames);
+        const outW = gifFrames[0]?.width || GIF_OUT_WIDTH;
+        const outH = gifFrames[0]?.height || GIF_OUT_HEIGHT;
         const encode = (workers) => new Promise((res, rej) => {
           const gif = new GIF({
             workers,
             quality: 12,
             workerScript: workers > 0 ? GIF_WORKER_URL : undefined,
-            width: GIF_OUT_WIDTH,
-            height: GIF_OUT_HEIGHT,
+            width: outW,
+            height: outH,
             repeat: 0
           });
           gifFrames.forEach((frame) => {
@@ -3280,6 +3697,7 @@
       wasAtPeak = false;
       peakSustainStart = 0;
       peakEpisodeCaptured = false;
+      updateRecIndicator();
     }
 
     function tickPeakCapture() {
@@ -3288,12 +3706,14 @@
 
       if (captureBusy || captureFinalizing) {
         wasAtPeak = atPeak;
+        updateRecIndicator();
         return;
       }
       if (!peakArmed) {
         wasAtPeak = atPeak;
         peakSustainStart = 0;
         peakEpisodeCaptured = false;
+        updateRecIndicator();
         return;
       }
 
@@ -3310,6 +3730,7 @@
         peakEpisodeCaptured = false;
         wasAtPeak = false;
       }
+      updateRecIndicator();
     }
 
     function drainCaptureFrame() {
@@ -3411,8 +3832,7 @@
       if (video.readyState < 2 || offscreen.width < 1) return;
       const now = performance.now();
       if (!force && now - lastMemoryAt < MEMORY_COOLDOWN_MS) return;
-      if (!force && isEmotionallyNeutral(lastExpressions)) return;
-      if (!force && (!lastDetection || lastDetection.expression === "neutral")) return;
+      if (!force && getActiveDisplayEmotion() === "neutral") return;
       if (!force && !isAtPeakEnergy()) return;
       captureBusy = true;
       peakArmed = false;
@@ -3453,6 +3873,7 @@
           finishCapture();
         });
       }, CAPTURE_WATCHDOG_MS);
+      updateRecIndicator();
     }
 
     async function loadModelsFrom(baseUri) {
@@ -3501,13 +3922,14 @@
     }
 
     async function runFaceDetection() {
-      if (video.readyState < 2) return;
+      if (detectionInFlight || video.readyState < 2) return;
+      if (lastRenderDurationMs > 28) return;
       if (!drawVideoCoverTo(detectCtx, detectCanvas.width, detectCanvas.height)) return;
 
+      detectionInFlight = true;
       try {
         const faces = await faceapi
-          .detectAllFaces(detectCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.38 }))
-          .withFaceLandmarks()
+          .detectAllFaces(detectCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 96, scoreThreshold: 0.4 }))
           .withFaceExpressions();
 
         peopleCount = faces.length;
@@ -3516,21 +3938,21 @@
         if (result) {
           lastExpressions = result.expressions;
           updateMoodState(result.expressions);
-          const neutralFace = isEmotionallyNeutral(result.expressions);
-          const live = getLiveExpression(result.expressions);
-          targetExpressionIntensity = neutralFace
+          const live = getDominantInsideOutEmotion(result.expressions);
+          const isNeutral = live.name === "neutral";
+          targetExpressionIntensity = isNeutral
             ? 0
-            : Math.pow(computeExpressionIntensity(result.expressions), 1.16);
+            : computeExpressionIntensity(result.expressions);
           lastDetection = {
-            expression: neutralFace ? "neutral" : live.name,
-            probability: neutralFace
+            expression: live.name,
+            probability: isNeutral
               ? (result.expressions.neutral || live.score)
               : live.score,
             intensity: targetExpressionIntensity
           };
           lastFaceBox = result.detection.box;
           faceDetectVersion += 1;
-          const baseScore = expressionScores[live.name] ?? 0.3;
+          const baseScore = emotionScores[live.name] ?? 0.3;
           targetFaceScore = lerp(0.4, baseScore, 0.35) + (targetExpressionIntensity * 0.65);
           targetFaceScore = clamp(targetFaceScore, 0.35, 1.0);
         } else {
@@ -3548,6 +3970,8 @@
         lastDetection = null;
         lastFaceBox = null;
         targetFaceScore = 0.3;
+      } finally {
+        detectionInFlight = false;
       }
     }
 
@@ -3568,6 +3992,24 @@
       ctx.fillText(message, 16, 28);
     }
 
+    function scheduleNextRenderFrame() {
+      if (renderLoopScheduled) return;
+      renderLoopScheduled = true;
+      const tick = () => {
+        renderLoopScheduled = false;
+        renderFrame();
+      };
+      if (
+        typeof video.requestVideoFrameCallback === "function"
+        && video.srcObject
+        && video.readyState >= 2
+      ) {
+        video.requestVideoFrameCallback(tick);
+      } else {
+        requestAnimationFrame(tick);
+      }
+    }
+
     function renderFrame() {
       const frameStart = performance.now();
       try {
@@ -3584,13 +4026,15 @@
         if (uiUpdateFrame % UI_UPDATE_EVERY_N_FRAMES === 0 || captureBusy) updateInstrumentUI();
       } else {
       drawVideoCover();
+      rawCtx.drawImage(offscreen, 0, 0);
 
       const procW = offscreen.width;
       const procH = offscreen.height;
       const pixelCount = procW * procH;
+      const pixelStride = lastRenderDurationMs > 18 ? 2 : 1;
       const emberW = Math.max(96, procW >> 2);
       const emberH = Math.max(72, procH >> 2);
-      const skipTrailPass = lastRenderDurationMs > 22;
+      const skipTrailPass = lastRenderDurationMs > 22 || pixelStride > 1;
       const emberCount = emberW * emberH;
       if (prevLumaFrame.length !== pixelCount) {
         prevLumaFrame = new Float32Array(pixelCount);
@@ -3649,6 +4093,7 @@
         const maxY = Math.min(procH - 1, Math.ceil(liveFace.cy + liveFace.ry * 1.35));
         const minX = Math.max(0, Math.floor(liveFace.cx - liveFace.rx * 1.35));
         const maxX = Math.min(procW - 1, Math.ceil(liveFace.cx + liveFace.rx * 1.35));
+        if (pixelStride === 1) {
         for (let ty = minY; ty <= maxY; ty += 3) {
           for (let tx = minX; tx <= maxX; tx += 3) {
             const tp = ty * procW + tx;
@@ -3672,6 +4117,7 @@
             liveFace.cx = lerp(liveFace.cx, mx, 0.16);
             liveFace.cy = lerp(liveFace.cy, my, 0.16);
           }
+        }
         }
 
         liveFace.glowCx = lerp(liveFace.glowCx, liveFace.cx, 0.1);
@@ -3702,21 +4148,23 @@
       );
       const glowRampAdjusted = glowRamp * (1 - (peakRoll * 0.34));
       const thermalBoostScale = lerp(1.18, 0.86, peakRoll);
-      const baseExpression = lastDetection?.expression || "neutral";
-      const currentExpression = (moodExpressionStable === "sad" || moodExpressionStable === "angry")
-        ? moodExpressionStable
-        : baseExpression;
-      const expressionConfidence = currentExpression === "sad"
-        ? moodSadLatch
-        : currentExpression === "angry"
-          ? moodAngryLatch
-          : clamp(lastDetection?.probability || 0, 0, 1);
-      const moodDrivenExpression = currentExpression === "sad" || currentExpression === "angry";
+      const currentExpression = getActiveDisplayEmotion();
+      const expressionConfidence = currentExpression === "neutral"
+        ? 0
+        : clamp(
+          Math.max(
+            lastDetection?.expression === currentExpression ? (lastDetection?.probability || 0) : 0,
+            moodEmotionLatches[currentExpression] || 0
+          ),
+          0,
+          1
+        );
+      const moodDrivenExpression = currentExpression !== "neutral";
       let frameMotionPeak = 0;
       let movePixelCount = 0;
 
-      for (let y = 0; y < procH; y += 1) {
-        for (let x = 0; x < procW; x += 1) {
+      for (let y = 0; y < procH; y += pixelStride) {
+        for (let x = 0; x < procW; x += pixelStride) {
           const i = (y * procW + x) * 4;
           const p = y * procW + x;
           const r = data[i];
@@ -3781,6 +4229,10 @@
           ) * personContain;
           thermalBoost += exprHeatCurve * 0.14 * personContain;
           thermalBoost *= (1 - (peakRoll * 0.42));
+          if (!moodDrivenExpression) {
+            warmMix *= 0.42;
+            thermalBoost *= 0.35;
+          }
         }
 
         const boostedLum = clamp(Math.pow(rawLum, THERMAL_LUM_GAMMA) + (thermalBoost * thermalBoostScale), 0, 1);
@@ -3797,16 +4249,16 @@
           let outG = Math.round(lerp(bg.g, thermal.g, warmMix));
           let outB = Math.round(lerp(bg.b, thermal.b, warmMix));
 
-          if (hasFace && warmMix > 0.08 && (exprHeatCurve > 0.5 || (moodDrivenExpression && expressionConfidence > 0.55))) {
+          if (hasFace && warmMix > 0.08 && moodDrivenExpression && expressionConfidence > 0.28) {
             const exHot = (x - cx) / rx;
             const eyHot = (y - cy) / ry;
             const distHot = Math.sqrt((exHot * exHot) + (eyHot * eyHot));
             const hotRadius = 1.18;
             let faceHot = 0;
             if (distHot < hotRadius) {
-              const thermalHotMix = clamp((exprHeatCurve - 0.5) / 0.5, 0, 1);
-              const moodHotMix = moodDrivenExpression ? clamp((expressionConfidence - 0.45) / 0.55, 0, 1) : 0;
-              const hotMix = Math.max(thermalHotMix, moodHotMix);
+              const thermalHotMix = clamp((exprHeatCurve - 0.36) / 0.64, 0, 1);
+              const moodHotMix = clamp((expressionConfidence - 0.28) / 0.72, 0, 1);
+              const hotMix = moodHotMix > 0.08 ? moodHotMix : thermalHotMix * 0.35;
               const hotMixShaped = hotMix * hotMix * (3 - (2 * hotMix));
               faceHot = Math.pow(clamp(1 - (distHot / hotRadius), 0, 1), 2.15);
               const amberHot = facePeakColor(currentExpression, hotMixShaped);
@@ -3835,11 +4287,11 @@
             }
           }
 
-          const adaptiveDeltaFloor = hasFace ? 0.055 : 0.08;
-          const motionHit = clamp((delta - adaptiveDeltaFloor) * 6.2, 0, 1);
+          const adaptiveDeltaFloor = hasFace ? 0.085 : 0.11;
+          const motionHit = clamp((delta - adaptiveDeltaFloor) * 4.8, 0, 1);
           // Allow non-face movers (hands/background people) when motion is strong.
-          const globalMotionMask = clamp((motionHit - 0.48) * 1.9, 0, 1);
-          const lowerFrameBoost = clamp(((y / procH) - 0.38) / 0.62, 0, 1) * motionHit * 0.55;
+          const globalMotionMask = clamp((motionHit - 0.58) * 1.6, 0, 1);
+          const lowerFrameBoost = clamp(((y / procH) - 0.38) / 0.62, 0, 1) * motionHit * 0.35;
           const motionSourceMask = hasFace
             ? Math.max(trailMask, globalMotionMask, lowerFrameBoost)
             : globalMotionMask;
@@ -3851,16 +4303,31 @@
             if (speedInject > motionSpeedEmberTmp[ep]) motionSpeedEmberTmp[ep] = speedInject;
           }
 
-          const moveHit = clamp((delta - 0.12) * 4.2, 0, 1) * Math.max(0.35, motionSourceMask);
-          if (moveHit > 0.24) {
+          const moveHit = clamp((delta - 0.16) * 3.4, 0, 1) * Math.max(0.35, motionSourceMask);
+          if (moveHit > 0.36) {
             movePixelCount += 1;
             if (moveHit > frameMotionPeak) frameMotionPeak = moveHit;
           }
 
           const polished = polishThermalPixel(outR, outG, outB, peakRoll);
-          data[i] = polished.r;
-          data[i + 1] = polished.g;
-          data[i + 2] = polished.b;
+          if (pixelStride === 1) {
+            data[i] = polished.r;
+            data[i + 1] = polished.g;
+            data[i + 2] = polished.b;
+          } else {
+            const yEnd = Math.min(y + pixelStride, procH);
+            const xEnd = Math.min(x + pixelStride, procW);
+            for (let by = y; by < yEnd; by += 1) {
+              for (let bx = x; bx < xEnd; bx += 1) {
+                const bi = (by * procW + bx) * 4;
+                const bp = by * procW + bx;
+                data[bi] = polished.r;
+                data[bi + 1] = polished.g;
+                data[bi + 2] = polished.b;
+                prevLumaFrame[bp] = rawLum;
+              }
+            }
+          }
         }
       }
 
@@ -3870,8 +4337,8 @@
 
       const emberScaleX = emberW / procW;
       const emberScaleY = emberH / procH;
-      for (let y = 0; y < procH; y += 1) {
-        for (let x = 0; x < procW; x += 1) {
+      for (let y = 0; y < procH; y += pixelStride) {
+        for (let x = 0; x < procW; x += pixelStride) {
           const i = (y * procW + x) * 4;
           const emberVal = sampleEmberBilinear(
             motionEmber,
@@ -3909,6 +4376,26 @@
           data[i] = Math.round(lerp(data[i], trail.r, trailMix));
           data[i + 1] = Math.round(lerp(data[i + 1], trail.g, trailMix));
           data[i + 2] = Math.round(lerp(data[i + 2], trail.b, trailMix));
+          if (pixelStride > 1) {
+            const yEnd = Math.min(y + pixelStride, procH);
+            const xEnd = Math.min(x + pixelStride, procW);
+            for (let by = y; by < yEnd; by += 1) {
+              for (let bx = x + 1; bx < xEnd; bx += 1) {
+                const bi = (by * procW + bx) * 4;
+                data[bi] = data[i];
+                data[bi + 1] = data[i + 1];
+                data[bi + 2] = data[i + 2];
+              }
+            }
+            for (let bx = x; bx < xEnd; bx += 1) {
+              for (let by = y + 1; by < yEnd; by += 1) {
+                const bi = (by * procW + bx) * 4;
+                data[bi] = data[i];
+                data[bi + 1] = data[i + 1];
+                data[bi + 2] = data[i + 2];
+              }
+            }
+          }
         }
       }
       }
@@ -3918,14 +4405,15 @@
       ctx.drawImage(offscreen, 0, 0, displayW, displayH);
 
       // Motion metric: normalize to 0–1, then smooth for stable readout.
-      const movingRatio = movePixelCount / Math.max(1, pixelCount);
-      const peakNorm = clamp((frameMotionPeak - 0.42) / 0.58, 0, 1);
-      const spreadNorm = clamp((movingRatio - 0.05) / 0.14, 0, 1);
-      const motionRaw = clamp(Math.max(peakNorm, spreadNorm * 0.45), 0, 1);
-      const motionInstant = Math.pow(motionRaw, 1.35);
-      const motionRise = motionInstant > moveLevel ? 0.1 : 0.14;
+      const sampledPixelCount = Math.max(1, Math.ceil(pixelCount / (pixelStride * pixelStride)));
+      const movingRatio = movePixelCount / sampledPixelCount;
+      const peakNorm = clamp((frameMotionPeak - 0.52) / 0.48, 0, 1);
+      const spreadNorm = clamp((movingRatio - 0.09) / 0.18, 0, 1);
+      const motionRaw = clamp(Math.max(peakNorm, spreadNorm * 0.35), 0, 1);
+      const motionInstant = Math.pow(motionRaw, 1.55);
+      const motionRise = motionInstant > moveLevel ? 0.06 : 0.10;
       moveLevel = lerp(moveLevel, motionInstant, motionRise);
-      const displayRise = motionInstant > moveLevelDisplay ? 0.08 : 0.12;
+      const displayRise = motionInstant > moveLevelDisplay ? 0.05 : 0.09;
       moveLevelDisplay = lerp(moveLevelDisplay, motionInstant, displayRise);
       const trailRise = moveLevel > trailHeat ? 0.14 : 0.1;
       trailHeat = lerp(trailHeat, moveLevel, trailRise);
@@ -3940,7 +4428,7 @@
         }
       }
       lastRenderDurationMs = performance.now() - frameStart;
-      requestAnimationFrame(renderFrame);
+      scheduleNextRenderFrame();
     }
 
     function getSlotPitch() {
@@ -3991,12 +4479,46 @@
       return offsets;
     }
 
-    function applyTimelineSpacingAndTicks(slots, offsetsSec) {
+    function getTimelineRulerSpanSec(rulerWidth) {
+      const maxTicks = Math.max(2, Math.floor(rulerWidth / RULER_MIN_TICK_SPACING_PX));
+      return maxTicks * RULER_TICK_INTERVAL_SEC;
+    }
+
+    function layoutTimelineRuler(force = false) {
+      if (!timelineRuler || !memoryRack) return;
+      const rulerWidth = timelineRuler.clientWidth;
+      if (rulerWidth < 8) return;
+      if (!force && rulerWidth === lastRulerLayoutWidth && timelineRuler.childElementCount > 0) return;
+      lastRulerLayoutWidth = rulerWidth;
+      timelineRuler.replaceChildren();
+
+      const totalSpanSec = getTimelineRulerSpanSec(rulerWidth);
+
+      for (let tickSec = 0; tickSec <= totalSpanSec; tickSec += RULER_TICK_INTERVAL_SEC) {
+        const x = (tickSec / totalSpanSec) * rulerWidth;
+        const mark = document.createElement("div");
+        mark.className = "timeline-ruler-mark";
+        if (tickSec === 0) mark.classList.add("is-start");
+        else if (tickSec >= totalSpanSec) mark.classList.add("is-end");
+        mark.style.left = `${x}px`;
+
+        const label = document.createElement("span");
+        label.className = "timeline-ruler-label";
+        label.textContent = formatSessionTimestamp(tickSec);
+
+        const tick = document.createElement("span");
+        tick.className = "timeline-ruler-tick";
+        tick.setAttribute("aria-hidden", "true");
+
+        mark.append(label, tick);
+        timelineRuler.appendChild(mark);
+      }
+    }
+
+    function applyTimelineSpacing(slots) {
       if (!memoryBalls) return;
       if (!slots.length) {
-        if (memoryTicks) memoryTicks.replaceChildren();
         memoryBalls.style.width = "";
-        if (memoryTicks) memoryTicks.style.width = "";
         return;
       }
 
@@ -4007,24 +4529,16 @@
 
       const totalTrackW = Math.max(slotPitch, slotPitch * slots.length);
       memoryBalls.style.width = `${totalTrackW}px`;
-      if (memoryTicks) {
-        memoryTicks.style.width = `${totalTrackW}px`;
-        memoryTicks.replaceChildren();
-      }
     }
 
     function updateMemorySlotTimestamps() {
       if (!memoryBalls) return;
       const slots = [...memoryBalls.querySelectorAll(".memory-slot")];
-      const offsetsSec = getSlotTimelineOffsetsSec(slots);
-      slots.forEach((slot, i) => {
-        const timeEl = slot.querySelector(".memory-slot-time");
-        if (!timeEl) return;
-        const startSec = Math.round(offsetsSec[i] || 0);
-        timeEl.textContent = formatSessionTimestamp(startSec);
-        timeEl.dateTime = `PT${startSec}S`;
+      slots.forEach((slot) => {
+        slot.querySelector(".memory-slot-time")?.remove();
       });
-      applyTimelineSpacingAndTicks(slots, offsetsSec);
+      applyTimelineSpacing(slots);
+      layoutTimelineRuler();
     }
 
     let lastDialLayoutKey = "";
@@ -4075,6 +4589,7 @@
       const start = clamp(fromIndex, 0, balls.length - 1);
       let total = 0;
       for (let i = start; i < balls.length; i += 1) {
+        if (shouldFilterBall(balls[i])) continue;
         total += getBallPlaybackDurationMs(balls[i]);
       }
       return Math.max(1, total);
@@ -4185,7 +4700,7 @@
       const gifUrl = ball.dataset.gifUrl;
       const poster = ball.dataset.posterUrl || "";
       if (!gifUrl || !isAnimatedGifUrl(gifUrl)) {
-        if (poster) showPlaybackStill(poster);
+        if (poster) showPlaybackStill(poster, ball);
         return;
       }
 
@@ -4194,14 +4709,14 @@
         playbackDisplay.onerror = () => {
           playbackDisplay.onerror = null;
           if (ball._captureFrames?.length) playPlaybackFrameLoop(ball);
-          else if (poster) showPlaybackStill(poster);
+          else if (poster) showPlaybackStill(poster, ball);
         };
         const needsRestart = playbackDisplay.src === gifUrl;
         if (needsRestart) {
           playbackDisplay.src = "";
-          requestAnimationFrame(() => { showPlaybackStill(gifUrl); });
+          requestAnimationFrame(() => { showPlaybackStill(gifUrl, ball); });
         } else {
-          showPlaybackStill(gifUrl);
+          showPlaybackStill(gifUrl, ball);
         }
       };
 
@@ -4220,7 +4735,7 @@
         if (ball.classList.contains("is-selected") && ball._captureFrames?.length) {
           playPlaybackFrameLoop(ball);
         } else if (poster) {
-          showPlaybackStill(poster);
+          showPlaybackStill(poster, ball);
         }
       };
       probe.src = gifUrl;
@@ -4234,6 +4749,7 @@
       if (reelPlaying) return;
       playbackPaused = false;
       if (btnPlay) btnPlay.classList.add("is-active");
+      applyPlaybackMoodTint(ball);
       const poster = ball.dataset.posterUrl || "";
       if (ball._captureFrames?.length >= 2) {
         playPlaybackFrameLoop(ball);
@@ -4244,7 +4760,7 @@
         playBallGif(ball);
         return;
       }
-      if (poster) showPlaybackStill(poster);
+      if (poster) showPlaybackStill(poster, ball);
       else clearPlaybackScreen();
     }
 
@@ -4333,6 +4849,7 @@
       window.addEventListener("resize", () => {
         onViewportLayoutChange();
         debouncedScheduleLayoutDialBalls();
+        layoutTimelineRuler(true);
       });
       window.addEventListener("orientationchange", () => {
         setTimeout(onViewportLayoutChange, 350);
@@ -4359,7 +4876,7 @@
       return frameToPreviewUrl(cloneFrameCanvas());
     }
 
-    function addCoreMemoryBall(mediaUrl, posterUrl, mood = "happy", captureFrames = null) {
+    function addCoreMemoryBall(mediaUrl, posterUrl, mood = "neutral", captureFrames = null) {
       if (!memoryBalls || !memoryRack) return null;
       const preview = resolveBallPreview(mediaUrl, captureFrames);
       if (!preview) return null;
@@ -4383,9 +4900,6 @@
       ball.className = "memory-ball is-new";
       applyBallMood(ball, mood);
       slot.appendChild(ball);
-      const timeEl = document.createElement("time");
-      timeEl.className = "memory-slot-time";
-      slot.appendChild(timeEl);
       const newIdx = appendMemorySlot(slot);
       setBallMedia(ball, preview, posterUrl || preview);
       if (captureFrames?.length) attachBallCaptureFrames(ball, captureFrames);
@@ -4803,13 +5317,9 @@
     }
 
     function initDeviceControls() {
-      chipCapture?.addEventListener("click", () => {
-        if (captureBusy || captureFinalizing) return;
-        if (video.readyState < 2) {
-          if (footerStatus) footerStatus.textContent = "Camera not ready — wait a moment";
-          return;
-        }
-        queuePeakMemoryCapture(true);
+      chipJoyFilter?.addEventListener("click", () => {
+        if (getDialBallCount() === 0) return;
+        toggleJoyFilter();
       });
 
       btnPrevRow?.addEventListener("click", () => stepMemoryRow(-1));
@@ -4848,7 +5358,12 @@
 
     async function initWebcam() {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        video: {
+          facingMode: "user",
+          width: { ideal: 640, max: 960 },
+          height: { ideal: 480, max: 540 },
+          frameRate: { ideal: 30, max: 30 }
+        },
         audio: false
       });
       video.srcObject = stream;
@@ -4868,7 +5383,7 @@
         console.error("Webcam init error", error);
         setViewfinderAlert("Camera error — check permission and reload");
         if (footerStatus) footerStatus.textContent = "Sensor offline";
-        requestAnimationFrame(renderFrame);
+        scheduleNextRenderFrame();
         return;
       }
 
@@ -4885,7 +5400,7 @@
         setViewfinderAlert("Expression models unavailable — feed still live");
         if (footerStatus) footerStatus.textContent = "Camera on — limited sensing";
         layoutViewfinderFromFeed();
-        requestAnimationFrame(renderFrame);
+        scheduleNextRenderFrame();
       }
     }
 
@@ -4906,7 +5421,8 @@
         initEnergyLedBar();
         initPlaybackIdleMessage();
         updatePlaybackIdleVisibility();
-        requestAnimationFrame(renderFrame);
+        requestAnimationFrame(() => layoutTimelineRuler(true));
+        scheduleNextRenderFrame();
       });
     }
 
