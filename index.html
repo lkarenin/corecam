@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -14,34 +14,54 @@
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
   <style>
     :root {
-      --bg: #141418;
-      --bg-deep: #0c0c0f;
-      --surface: #1e1e24;
-      --surface-raised: #26262e;
-      --ink: #f2f2f4;
-      --ink-muted: #8b8b96;
-      --ink-faint: #5a5a64;
-      --accent: #ff6b2c;
-      --accent-soft: #ff9a62;
-      --accent-glow: rgba(255, 107, 44, 0.5);
-      --ok: #6b9a78;
-      --shadow-dark: rgba(0, 0, 0, 0.55);
-      --shadow-light: rgba(255, 255, 255, 0.04);
-      --inset-dark: rgba(0, 0, 0, 0.5);
-      --inset-light: rgba(255, 255, 255, 0.05);
-      --radius-lg: 28px;
-      --radius-md: 18px;
-      --radius-sm: 12px;
+      --shell: #141414;
+      --shell-light: #1a1a1a;
+      --body: #222222;
+      --body-deep: #1c1c1c;
+      --body-dark: #161616;
+      --deck: #252525;
+      --deck-deep: #1e1e1e;
+      --recess: #2a2a2a;
+      --recess-deep: #202020;
+      --ink: #e0e0e0;
+      --ink-muted: #cdcdcd;
+      --ink-faint: #b7b7b7;
+      --accent-rec: #d64545;
+      --accent-rec-glow: rgba(214, 69, 69, 0.55);
+      --lcd-bg: #121212;
+      --lcd-ink: #d3d3d3;
+      --screen-bg: #000000;
       --font: "IBM Plex Mono", "SF Mono", "Consolas", monospace;
-      --neu-raised: 8px 8px 18px var(--shadow-dark), -7px -7px 16px var(--shadow-light);
-      --neu-pressed: inset 6px 6px 14px var(--inset-dark), inset -5px -5px 12px var(--inset-light);
-      --neu-soft: 4px 4px 10px var(--shadow-dark), -3px -3px 9px var(--shadow-light);
-      --rack-col: minmax(150px, 190px);
-      --dial-width: 118px;
-      --dial-height: 272px;
-      --slot-pitch: 58px;
-      --ball-size: 44px;
-      --ball-size-active: 88px;
+      --neu-out:
+        0 1px 2px rgba(0, 0, 0, 0.35);
+      --neu-in:
+        inset 0 1px 2px rgba(0, 0, 0, 0.35);
+      --neu-knob:
+        0 1px 2px rgba(0, 0, 0, 0.35);
+      --neu-knob-pressed:
+        inset 0 1px 2px rgba(0, 0, 0, 0.4);
+      --neu-bezel:
+        inset 0 1px 2px rgba(0, 0, 0, 0.45);
+      --screen-inset: 10px;
+      --screen-radius: 4px;
+      --slot-pitch: 62px;
+      --ball-size: 38px;
+      --ball-size-active: 46px;
+      --device-max: 960px;
+      /* Modern phone held sideways (e.g. 19.5:9 portrait → 19.5:9 landscape box) */
+      --phone-landscape-w: 19.5;
+      --phone-landscape-h: 9;
+      --device-aspect: 19.5 / 9;
+      --topbar-h: 96px;
+      --timeline-playhead: var(--accent-rec);
+      --panel-split: 57%;
+      --screen-aspect: 19.5 / 10.8;
+      --screens-recess-aspect: 39 / 10.8;
+      --bezel-width: 7px;
+      --bezel-color: #0f1216;
+      --viewport-radius: 14px;
+      --dpad-size: 232px;
+      --panel-content-inset-x: 22px;
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -49,1063 +69,1749 @@
     html, body {
       margin: 0;
       width: 100%;
+      max-width: 100vw;
       height: 100%;
       overflow: hidden;
-      background: var(--bg);
-      color: var(--ink);
+      overflow-x: clip;
       font-family: var(--font);
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 0.08em;
       -webkit-font-smoothing: antialiased;
+      background: #0f0f0f;
+      color: var(--ink);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font-family: var(--font);
     }
 
     body {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: clamp(12px, 2.5vw, 28px);
-      background:
-        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 107, 44, 0.06), transparent 55%),
-        linear-gradient(165deg, var(--bg) 0%, var(--bg-deep) 100%);
+      padding: 8px;
     }
 
     video { display: none; }
 
-    .instrument {
-      width: min(1180px, 100%);
-      height: min(720px, 100%);
-      display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 14px;
-      padding: 18px 20px 16px;
-      border-radius: calc(var(--radius-lg) + 6px);
-      background: var(--surface);
-      box-shadow: var(--neu-raised);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .instrument-header {
-      display: grid;
-      grid-template-columns: 1fr var(--rack-col);
-      gap: 18px;
-      align-items: center;
-      padding: 4px 6px 2px;
-    }
-
-    .brand-block {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .brand {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink);
-    }
-
-    .brand-sub {
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--ink-faint);
-    }
-
-    .header-chips {
-      display: flex;
-      align-items: stretch;
-      gap: 10px;
-      width: 100%;
-      min-width: 0;
-    }
-
-    .chip {
-      flex: 1;
-      min-width: 0;
-      padding: 6px 10px;
-      border: none;
-      border-radius: 999px;
-      text-align: center;
-      font-family: var(--font);
-      font-size: 9px;
-      font-weight: 500;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--ink-muted);
-      background: var(--surface);
-      box-shadow: var(--neu-soft);
-      cursor: pointer;
-      transition: color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
-    }
-
-    .chip:hover:not(:disabled) {
-      color: var(--ink);
-      box-shadow: var(--neu-raised);
-    }
-
-    .chip:active:not(:disabled) {
-      transform: scale(0.97);
-      box-shadow: var(--neu-pressed);
-    }
-
-    .chip:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-
-    .chip:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    .chip.is-live {
-      color: var(--accent);
-      box-shadow: var(--neu-pressed), 0 0 0 1px rgba(255, 107, 44, 0.18);
-    }
-
-    .chip.is-capturing {
-      color: var(--accent-soft);
-      box-shadow: var(--neu-pressed), 0 0 12px var(--accent-glow);
-    }
-
-    .chip .chip-val {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      color: var(--ink);
-      margin-top: 2px;
-    }
-
-    .chip.is-live .chip-val,
-    .chip.is-capturing .chip-val { color: var(--accent); }
-
-    .instrument-body {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-      min-width: 0;
-    }
-
-    .sensor-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex: 1;
-      min-height: 0;
-      min-width: 0;
-    }
-
-    .sensor-stack-body {
-      display: grid;
-      grid-template-columns: 1fr var(--rack-col);
-      grid-template-rows: minmax(280px, 1fr) auto;
-      gap: 12px 18px;
-      flex: 1;
-      min-height: 0;
-      align-items: stretch;
-    }
-
-    .viewport-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex: 1;
-      min-height: 280px;
-      min-width: 0;
-      height: 100%;
-      align-self: stretch;
-      grid-column: 1;
-      grid-row: 1;
-      overflow: hidden;
-    }
-
-    .viewport-panel .instrument-footer {
-      flex-shrink: 0;
-    }
-
-    .panel-label {
-      font-size: 9px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--ink-faint);
-      padding-left: 4px;
-    }
-
-    .viewport-recess {
+    .device {
       position: relative;
-      flex: 1 1 0;
-      width: 100%;
-      min-height: 240px;
-      border-radius: var(--radius-md);
-      background: #08080a;
-      box-shadow: var(--neu-pressed);
+      width: min(
+        100vw - 16px,
+        var(--device-max),
+        calc((100dvh - 16px) * var(--phone-landscape-w) / var(--phone-landscape-h))
+      );
+      height: min(
+        100dvh - 16px,
+        calc((100vw - 16px) * var(--phone-landscape-h) / var(--phone-landscape-w)),
+        calc(var(--device-max) * var(--phone-landscape-h) / var(--phone-landscape-w))
+      );
+      display: grid;
+      grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+      background: linear-gradient(165deg, var(--shell-light) 0%, var(--shell) 42%, var(--body-deep) 100%);
+      box-shadow:
+        0 0 0 1px rgba(80, 80, 80, 0.6),
+        0 8px 24px rgba(0, 0, 0, 0.45);
+      border-radius: 20px;
       overflow: hidden;
+      touch-action: manipulation;
     }
 
-    .viewport-recess::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 2;
-      border-radius: inherit;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    .device-topbar {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: var(--topbar-h);
       background:
         repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 3px,
-          rgba(255, 255, 255, 0.015) 3px,
-          rgba(255, 255, 255, 0.015) 4px
-        );
+          90deg,
+          rgba(0, 0, 0, 0.07) 0,
+          rgba(0, 0, 0, 0.07) 1px,
+          transparent 1px,
+          transparent 7px
+        ),
+        linear-gradient(180deg, var(--deck) 0%, var(--deck-deep) 100%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .timeline-rack {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .timeline-playhead {
+      position: absolute;
+      top: 8px;
+      bottom: 20px;
+      left: var(--panel-content-inset-x);
+      width: 2px;
+      background: var(--timeline-playhead);
+      box-shadow: 0 0 8px var(--accent-rec-glow);
+      z-index: 5;
+      pointer-events: none;
+      transform: translateX(0);
+      transition: transform 0.38s cubic-bezier(0.34, 1.25, 0.64, 1);
+    }
+
+    .timeline-playhead::before,
+    .timeline-playhead::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      width: 7px;
+      height: 7px;
+      margin-left: -3.5px;
+      border: 2px solid var(--timeline-playhead);
+      border-radius: 1px;
+      background: var(--deck-deep);
+    }
+
+    .timeline-playhead::before { top: -2px; }
+    .timeline-playhead::after { bottom: -2px; }
+
+    .panel-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      padding-bottom: 2px;
+      font-size: 7px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .panel-status #footerStatus {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .panel-rec {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+      letter-spacing: 0.2em;
+    }
+
+    .panel-clock {
+      margin-left: auto;
+      flex-shrink: 0;
+      letter-spacing: 0.14em;
+      color: var(--ink-faint);
+    }
+
+    .device-main {
+      display: grid;
+      grid-template-columns: var(--panel-split) minmax(0, 1fr);
+      min-height: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, var(--body) 0%, var(--body-deep) 100%);
+    }
+
+    .device-panel {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .device-panel--view {
+      display: flex;
+      flex-direction: column;
+      padding: 8px var(--panel-content-inset-x) 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+      border-right: none;
+      box-shadow: none;
+    }
+
+    .view-stage {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .view-stage-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      flex-shrink: 0;
+      margin-block: auto;
+    }
+
+    .view-stage-screens {
+      position: relative;
+      left: auto;
+      top: auto;
+      display: flex;
+      flex: 0 0 auto;
+      width: 100%;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .screens-recess {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: var(--screens-recess-aspect);
+      max-height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      padding: 0;
+      border-radius: 18px;
+      background: transparent;
+      border: var(--bezel-width) solid var(--bezel-color);
+      overflow: hidden;
+    }
+
+    .screen-recess {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+      background: unset;
+      color: rgba(28, 28, 28, 0);
+    }
+
+    .screen-recess + .screen-recess {
+      border-left: var(--bezel-width) solid var(--bezel-color);
+    }
+
+    .screen-recess--live .vf-aperture--live {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 11px 0 0 11px;
+      background: unset;
+      overflow: hidden;
+    }
+
+    .screen-recess--playback {
+      width: 100%;
+      height: 100%;
+    }
+
+    .screen-recess--playback .vf-aperture--playback {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: content-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 11px;
+      background: unset;
+      overflow: hidden;
+    }
+
+    .playback-media {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      box-sizing: content-box;
+      object-fit: cover;
+      object-position: center;
+      z-index: 1;
+      background: #000;
+      border: none;
+      outline: none;
+    }
+
+    .playback-media[hidden] {
+      display: none;
+    }
+
+    .playback-placeholder {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 14px 16px;
+      pointer-events: none;
+      text-align: center;
+      background:
+        radial-gradient(ellipse 120% 90% at 50% 50%, rgba(18, 24, 16, 0.55) 0%, transparent 68%),
+        linear-gradient(165deg, #0c0e0c 0%, #060806 100%);
+      box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.72);
+    }
+
+    .lcd-typewriter-line {
+      margin: 0;
+      max-width: 24em;
+      font-family: var(--font);
+      font-size: clamp(7px, 2vw, 9px);
+      font-weight: 400;
+      line-height: 1.55;
+      letter-spacing: 0.05em;
+      color: rgba(160, 192, 112, 0.58);
+      text-shadow:
+        0 0 5px rgba(160, 192, 112, 0.22),
+        0 0 1px rgba(160, 192, 112, 0.34);
+    }
+
+    .lcd-typewriter-prefix {
+      color: rgba(160, 192, 112, 0.42);
+    }
+
+    .lcd-typewriter-track .typewriter-char {
+      opacity: 0;
+    }
+
+    .lcd-typewriter-track .typewriter-char.is-revealed {
+      opacity: 1;
+    }
+
+    .lcd-typewriter-cursor {
+      display: inline-block;
+      margin-left: 1px;
+      color: rgba(160, 192, 112, 0.72);
+      text-shadow: 0 0 4px rgba(160, 192, 112, 0.35);
+      animation: lcdCursorBlink 1s step-end infinite;
+    }
+
+    @keyframes lcdCursorBlink {
+      50% { opacity: 0; }
+    }
+
+    .playback-placeholder.is-muted .lcd-typewriter-line {
+      opacity: 0.35;
+    }
+
+    .vf-aperture--playback.has-media .playback-placeholder,
+    .vf-aperture--playback.has-memories .playback-placeholder {
+      display: none;
+    }
+
+    .view-stage-meters {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .energy-led-bar {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px;
+      align-items: center;
+      height: 32px;
+      padding: 4px 6px;
+      background: linear-gradient(180deg, #0c0f13 0%, #090b0f 100%);
+      color: rgba(195, 192, 187, 1);
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.68);
+      border-image: none;
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.72),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .energy-led-label {
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(82, 82, 82, 0.88);
+      white-space: nowrap;
+    }
+
+    .energy-led-track {
+      width: 100%;
+      display: grid;
+      grid-auto-flow: row;
+      grid-template-rows: repeat(5, 1fr);
+      gap: 1px;
+      align-items: stretch;
+      padding: 1px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .energy-led-seg {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 0;
+      background: #030405;
+      border: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      transition: background 0.08s linear, box-shadow 0.08s linear;
+    }
+
+    .energy-led-seg.is-on {
+      background: var(--pixel-color, #1a1aff);
+      box-shadow:
+        0 0 1px 0 var(--pixel-glow, rgba(26, 26, 255, 0.95)),
+        0 0 2px 0 var(--pixel-glow, rgba(26, 26, 255, 0.85));
+    }
+
+    .readout-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .readout {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .readout-label {
+      font-size: 7px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .readout-value {
+      font-family: var(--font);
+      font-size: clamp(20px, 3.8vw, 30px);
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+    }
+
+    .onboarding-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+      background:
+        radial-gradient(ellipse 90% 70% at 50% 38%, rgba(52, 50, 48, 0.55) 0%, transparent 70%),
+        linear-gradient(180deg, rgba(22, 21, 20, 0.97) 0%, rgba(10, 10, 9, 0.99) 100%);
+      cursor: pointer;
+      transition: opacity 1.2s cubic-bezier(0.33, 0, 0.2, 1);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .onboarding-overlay.is-fading {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .onboarding-overlay.is-done {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .onboarding-overlay-content {
+      max-width: 22em;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(16px, 4vh, 24px);
+      pointer-events: none;
+      transition: opacity 1.2s cubic-bezier(0.33, 0, 0.2, 1);
+    }
+
+    .onboarding-overlay.is-fading .onboarding-overlay-content {
+      opacity: 0;
+    }
+
+    .onboarding-tap-hint {
+      margin: 8px 0 0;
+      font-family: var(--font);
+      font-size: 7px;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      text-align: center;
+      color: rgba(200, 194, 186, 0.35);
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .onboarding-overlay.is-ready .onboarding-tap-hint {
+      opacity: 1;
+    }
+
+    .onboarding-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1;
+      color: var(--ink-muted);
+      background: radial-gradient(circle at 35% 28%, var(--shell-light) 0%, var(--body) 100%);
+      box-shadow: var(--neu-out);
+      cursor: pointer;
+      opacity: 1;
+      pointer-events: auto;
+      transition: box-shadow 0.12s ease, transform 0.1s ease, opacity 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .onboarding-overlay.is-done .onboarding-close-btn {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .onboarding-close-btn:active {
+      transform: scale(0.94);
+      box-shadow: var(--neu-knob-pressed);
+    }
+
+    .onboarding-info-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 40;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1;
+      color: var(--ink-muted);
+      background: radial-gradient(circle at 35% 28%, var(--shell-light) 0%, var(--body) 100%);
+      box-shadow: var(--neu-out);
+      cursor: pointer;
+      transition: box-shadow 0.12s ease, transform 0.1s ease, opacity 0.3s ease;
+    }
+
+    .onboarding-info-btn:active {
+      transform: scale(0.94);
+      box-shadow: var(--neu-knob-pressed);
+    }
+
+    .onboarding-overlay:not(.is-done) ~ .onboarding-info-btn {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .onboarding-overlay.is-info-only {
+      background:
+        radial-gradient(ellipse 90% 70% at 50% 38%, rgba(52, 50, 48, 0.4) 0%, transparent 70%),
+        linear-gradient(180deg, rgba(22, 21, 20, 0.78) 0%, rgba(10, 10, 9, 0.88) 100%);
+    }
+
+    .onboarding-overlay.is-info-only #onboardingLine1 {
+      display: none;
+    }
+
+    .onboarding-overlay.is-info-only #onboardingLine2 {
+      font-size: clamp(10px, 2.6vw, 12px);
+      line-height: 1.65;
+      color: rgba(236, 228, 216, 0.92);
+      opacity: 1;
+      transform: none;
+    }
+
+    .device-panel--controls {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 8px;
+      gap: 6px;
+      background: unset;
+      background-image: none;
+      background-color: unset;
+      box-shadow: inset -1px 0 0 0 rgba(255, 255, 255, 0.25);
+      min-width: 0;
+    }
+
+    .controls-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .vf-intro-line {
+      margin: 0;
+      font-family: var(--font);
+      font-size: clamp(10px, 2.6vw, 12px);
+      font-weight: 400;
+      line-height: 1.65;
+      letter-spacing: 0.04em;
+      color: rgba(236, 228, 216, 0.92);
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.85);
+    }
+
+    .vf-intro-line--secondary {
+      font-size: clamp(9px, 2.4vw, 11px);
+      line-height: 1.6;
+      color: rgba(220, 214, 204, 0.62);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .vf-intro-line--secondary.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .vf-guidance.is-muted {
+      opacity: 0.35;
+    }
+
+    .vf-hud-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+      min-width: 0;
+      margin: 0;
+      width: auto;
+      max-width: 100%;
+    }
+
+    .vf-aperture--playback .vf-hud {
+      position: static;
+      inset: auto;
+      display: block;
+      border-radius: 0;
+    }
+
+    .vf-guidance {
+      margin: 0;
+      padding: 0 14px;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    .vf-guidance-line {
+      margin: 0;
+      font-family: var(--font);
+      font-size: clamp(6px, 1.8vw, 8px);
+      font-weight: 400;
+      line-height: 1.45;
+      letter-spacing: 0.03em;
+      color: rgba(236, 228, 216, 0.78);
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.88);
+    }
+
+    .vf-guidance-prefix {
+      color: rgba(200, 194, 186, 0.65);
+    }
+
+    .vf-guidance-cursor { color: rgba(200, 194, 186, 0.5); font-weight: 500; }
+    .vf-guidance-cursor.is-done { opacity: 0.35; animation: none; }
+
+    .vf-alert {
+      position: absolute;
+      inset: 0;
+      z-index: 7;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(12px, 3vh, 18px);
+      padding: clamp(28px, 9vw, 40px) clamp(22px, 7vw, 32px);
+      font-family: var(--font);
+      background: rgba(58, 54, 50, 0.9);
+      border-radius: var(--viewport-radius);
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      box-shadow: var(--neu-in);
+      pointer-events: none;
+      text-align: center;
+    }
+
+    .vf-alert.is-visible {
+      display: flex;
+    }
+
+    .onboarding-overlay:not(.is-done) ~ * .vf-alert,
+    .device:has(.onboarding-overlay:not(.is-done)) .vf-alert {
+      display: none !important;
+    }
+
+    .vf-alert-line {
+      margin: 0;
+      max-width: 26em;
+      font-family: var(--font);
+      font-size: clamp(10px, 2.6vw, 12px);
+      font-weight: 400;
+      line-height: 1.65;
+      letter-spacing: 0.04em;
+      color: rgba(236, 228, 216, 0.92);
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.85);
     }
 
     #display {
       position: absolute;
       inset: 0;
-      display: block;
       width: 100%;
       height: 100%;
+      display: block;
       z-index: 1;
-    }
-
-    .vf-reticle {
-      position: absolute;
-      inset: 14px;
-      pointer-events: none;
-      z-index: 3;
-      border: 1px solid rgba(255, 107, 44, 0.2);
-      border-radius: 6px;
-    }
-
-    .vf-reticle::before,
-    .vf-reticle::after {
-      content: "";
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      border-color: var(--accent-soft);
-      border-style: solid;
-      opacity: 0.7;
-    }
-
-    .vf-reticle::before {
-      top: -1px;
-      left: -1px;
-      border-width: 2px 0 0 2px;
-    }
-
-    .vf-reticle::after {
-      bottom: -1px;
-      right: -1px;
-      border-width: 0 2px 2px 0;
+      box-sizing: border-box;
+      border-radius: var(--viewport-radius);
+      background: unset;
+      color: rgba(28, 28, 28, 0);
     }
 
     .vf-hud {
-      position: absolute;
-      inset: 0;
+      position: static;
+      padding: 0;
+      display: block;
       pointer-events: none;
-      z-index: 4;
-      padding: 14px 16px;
+    }
+
+    .device-module-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: start;
+      justify-items: stretch;
+      flex-shrink: 0;
+    }
+
+    .energy-module {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .vf-hud-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .vf-transmission {
-      flex: 1;
-      min-width: 0;
-      max-width: min(440px, 70%);
-      margin-right: 10px;
-      font-family: var(--font);
-      font-size: 10px;
-      font-weight: 400;
-      line-height: 1.55;
-      letter-spacing: 0.05em;
-      text-transform: none;
-      color: rgba(236, 228, 216, 0.88);
-      text-shadow:
-        0 0 12px rgba(0, 0, 0, 0.75),
-        0 1px 3px rgba(0, 0, 0, 0.9);
-    }
-
-    .vf-transmission-prefix {
-      color: rgba(255, 154, 98, 0.85);
-      letter-spacing: 0.1em;
-    }
-
-    .vf-transmission-text {
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .vf-transmission-cursor {
-      display: inline-block;
-      margin-left: 1px;
-      color: var(--accent-soft);
-      font-weight: 500;
-      animation: transmissionBlink 0.85s step-end infinite;
-    }
-
-    .vf-transmission-cursor.is-done {
-      opacity: 0.35;
-      animation: none;
-    }
-
-    @keyframes transmissionBlink {
-      50% { opacity: 0; }
-    }
-
-    .vf-rec {
-      flex-shrink: 0;
-      display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 9px;
-      letter-spacing: 0.14em;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .module-label {
+      margin: 0;
+      font-size: 7px;
+      font-weight: 500;
+      letter-spacing: 0.36em;
       text-transform: uppercase;
-      color: rgba(236, 228, 216, 0.7);
+      color: var(--ink-faint);
     }
 
-    .vf-rec-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent-glow);
-      animation: recPulse 1.4s ease-in-out infinite;
-    }
-
-    @keyframes recPulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(0.85); }
-    }
-
-    .vf-hud-stats {
+    .energy-dot-matrix,
+    #energyDotMatrix {
+      --energy-grid: 16;
       display: grid;
-      grid-template-columns: repeat(2, auto);
-      gap: 6px 20px;
-      align-self: flex-end;
+      grid-template-columns: repeat(var(--energy-grid), minmax(0, 1fr));
+      grid-template-rows: repeat(var(--energy-grid), minmax(0, 1fr));
+      gap: clamp(1px, 0.28vw, 2px);
+      padding: clamp(7px, 2.2vw, 11px);
+      width: min(100%, 88px);
+      aspect-ratio: 1;
+      justify-self: center;
+      box-sizing: border-box;
+      border-radius: 6px;
+      background: linear-gradient(155deg, var(--body) 0%, var(--body-deep) 55%, var(--body-dark) 100%);
+      box-shadow: var(--neu-in);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      overflow: hidden;
     }
 
-    .vf-stat {
+    .energy-dot {
+      place-self: center;
+      width: 88%;
+      height: 88%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%, #2b2b2b 0%, #141414 72%);
+      box-shadow:
+        inset 1px 1px 2px rgba(0, 0, 0, 0.65),
+        inset -0.5px -0.5px 0 rgba(255, 255, 255, 0.04);
+      transition: background 0.12s linear, box-shadow 0.12s linear;
+    }
+
+    .energy-dot.is-void {
+      visibility: hidden;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .energy-dot.is-active {
+      background: radial-gradient(circle at 38% 30%, #d9d9d9 0%, #bfbfbf 45%, #9f9f9f 100%);
+      box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.5),
+        0 0 2px rgba(255, 255, 255, 0.3);
+    }
+
+    .lcd-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: stretch;
+      justify-self: stretch;
+    }
+
+    .lcd-bezel {
+      padding: 6px 8px 5px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #2a2a2a 0%, #202020 100%);
+      box-shadow: var(--neu-in);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .lcd-screen {
       display: flex;
       align-items: baseline;
-      gap: 8px;
+      justify-content: flex-end;
+      gap: 3px;
+      padding: 6px 8px;
+      min-width: 0;
+      width: 100%;
+      background: var(--lcd-bg);
+      border-radius: 3px;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(0, 0, 0, 0.4);
     }
 
-    .vf-stat-label {
-      font-size: 9px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: rgba(236, 228, 216, 0.5);
+    .lcd-digits {
+      display: flex;
+      gap: 4px;
+      align-items: center;
     }
 
-    .vf-stat-value {
-      font-size: 11px;
+    .seg-digit {
+      position: relative;
+      width: 18px;
+      height: 30px;
+    }
+
+    .seg {
+      position: absolute;
+      background: var(--lcd-ink);
+      opacity: 0.1;
+      border-radius: 1px;
+      transition: opacity 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .seg.is-on {
+      opacity: 1;
+      background: #4a4034;
+    }
+
+    .lcd-screen.is-active .seg.is-on {
+      background: #6a635c;
+      box-shadow: none;
+    }
+
+    .seg-a { top: 0; left: 3px; right: 3px; height: 3px; }
+    .seg-b { top: 3px; right: 0; width: 3px; height: 11px; }
+    .seg-c { bottom: 3px; right: 0; width: 3px; height: 11px; }
+    .seg-d { bottom: 0; left: 3px; right: 3px; height: 3px; }
+    .seg-e { bottom: 3px; left: 0; width: 3px; height: 11px; }
+    .seg-f { top: 3px; left: 0; width: 3px; height: 11px; }
+    .seg-g { top: 13px; left: 3px; right: 3px; height: 3px; }
+
+    .lcd-unit {
+      font-size: 10px;
       font-weight: 600;
       letter-spacing: 0.08em;
-      color: rgba(248, 240, 228, 0.92);
-      font-variant-numeric: tabular-nums;
+      color: var(--lcd-ink);
+      opacity: 0.35;
+      transition: color 0.12s ease, opacity 0.12s ease;
     }
 
-    .vf-stat-value.is-hot { color: var(--accent-soft); }
-
-    .vf-stat-value.is-core,
-    .readout-value.is-core {
-      color: var(--accent);
-      letter-spacing: 0.2em;
-      text-shadow: 0 0 12px var(--accent-glow);
+    .lcd-screen.is-active .lcd-unit {
+      color: var(--ink-muted);
+      opacity: 0.85;
     }
 
-    .vf-stat-value.is-core,
-    .readout-value.is-core {
-      color: var(--accent);
-      letter-spacing: 0.2em;
-      text-shadow: 0 0 12px var(--accent-glow);
-    }
-
-    .telemetry-panel {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      flex-shrink: 0;
-      grid-column: 1;
-      grid-row: 2;
-      align-self: end;
-    }
-
-      .telemetry-panel .readout-card {
-      padding: 10px 12px;
-    }
-
-    .telemetry-panel .readout-title {
-      margin-bottom: 8px;
-    }
-
-    .memory-rack {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      min-height: 0;
-      height: 100%;
-      align-self: stretch;
-      grid-column: 2;
-      grid-row: 1 / -1;
-      padding: 12px 10px;
-      border-radius: var(--radius-md);
-      background: var(--surface);
-      box-shadow: var(--neu-pressed);
-    }
-
-    .memory-rack-label {
-      margin: 0;
-      font-size: 9px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--ink-faint);
-    }
-
-    .memory-rack-hint {
-      margin: 0;
-      font-size: 8px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--ink-faint);
-      text-align: center;
-      line-height: 1.5;
-      max-width: 140px;
-    }
-
-    .memory-rack.empty .memory-rack-hint { display: block; }
-    .memory-rack:not(.empty) .memory-rack-hint { display: none; }
-
-    .memory-dial-wrap {
-      position: relative;
-      width: var(--dial-width);
-      flex: 1 1 0;
-      min-height: 0;
-      align-self: center;
-    }
-
-    .dial-arrow {
-      position: absolute;
-      left: -2px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 0;
-      height: 0;
-      border-top: 7px solid transparent;
-      border-bottom: 7px solid transparent;
-      border-left: 10px solid var(--accent);
-      filter: drop-shadow(0 0 4px var(--accent-glow));
-      z-index: 6;
-      pointer-events: none;
-    }
-
-    .memory-track-frame {
-      position: relative;
+    .hw-deck {
       width: 100%;
-      height: 100%;
-      border-radius: calc(var(--dial-width) / 2);
-      background: var(--bg-deep);
-      box-shadow: var(--neu-pressed);
-      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: stretch;
+      gap: 0;
+      min-height: 0;
+      padding: 4px 6px;
     }
 
-    .memory-track-frame::before,
-    .memory-track-frame::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 72%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    .memory-track-frame::before { top: 18%; }
-    .memory-track-frame::after { bottom: 18%; }
-
-    .memory-dial {
-      position: absolute;
-      inset: 8px 14px;
-      overflow: hidden;
-      cursor: grab;
-      touch-action: none;
-      z-index: 3;
-    }
-
-    .memory-dial.is-dragging { cursor: grabbing; }
-
-    .memory-dial-strip {
+    .hw-deck-side {
       display: flex;
       flex-direction: column;
       align-items: center;
-      will-change: transform;
+      justify-content: center;
+      gap: 14px;
+      flex: 0 0 auto;
+      flex-shrink: 0;
+      padding-left: clamp(10px, 2vw, 16px);
     }
 
-    .memory-dial-balls {
+    .hw-deck-main {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .hw-deck-unit {
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 5px;
     }
 
-    .memory-slot {
-      height: var(--slot-pitch);
+    .hw-btn-label {
+      font-family: var(--font);
+      font-size: 6px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      white-space: nowrap;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .hw-btn {
+      position: relative;
+      padding: 0;
+      border: 1px solid #3a3a3a;
+      font-family: var(--font);
+      cursor: pointer;
+      background: #222;
+      box-shadow: var(--neu-out);
+      transition: box-shadow 0.12s ease, transform 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .hw-btn:active:not(:disabled) {
+      transform: scale(0.96);
+      box-shadow: var(--neu-knob-pressed);
+    }
+
+    .hw-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .hw-btn--round {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
+      box-shadow: var(--neu-out);
     }
 
-    .memory-slot::before {
+    .hw-btn--rec-toggle {
+      width: 76px;
+      height: 34px;
+      position: relative;
+      border-radius: 17px;
+      border: 1px solid #060708;
+      background: linear-gradient(180deg, #15171a 0%, #090a0c 100%);
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.72),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.04),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      overflow: hidden;
+    }
+
+    .rec-toggle-pill {
+      position: absolute;
+      left: 42px;
+      top: 50%;
+      width: 24px;
+      height: 12px;
+      transform: translateY(-50%);
+      transform-origin: center;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #30363d 0%, #1e2329 100%);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.08),
+        inset 0 -1px 1px rgba(0, 0, 0, 0.45);
+      transition: left 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .rec-toggle-dot {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #1f2328;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .hw-btn--rec-toggle.is-active .rec-toggle-pill {
+      left: 10px;
+      background: linear-gradient(180deg, #ff3a3a 0%, #de1414 100%);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 210, 210, 0.42),
+        0 0 8px rgba(255, 35, 35, 0.45);
+    }
+
+    .hw-btn--rec-toggle.is-capturing .rec-toggle-pill {
+      left: 10px;
+      background: linear-gradient(180deg, #ff3a3a 0%, #de1414 100%);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 210, 210, 0.42),
+        0 0 10px rgba(255, 35, 35, 0.5);
+    }
+
+    .hw-btn--rec-toggle:active:not(:disabled) {
+      transform: scale(0.985);
+      box-shadow:
+        inset 0 3px 5px rgba(0, 0, 0, 0.78),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.03),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .hw-btn--rec-toggle:disabled {
+      opacity: 1;
+      cursor: default;
+    }
+
+    .hw-btn-rec-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-rec);
+      box-shadow: 0 0 8px var(--accent-rec-glow), inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+    }
+
+    @keyframes recDotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.88); }
+    }
+
+    .hw-btn-stop-icon {
+      width: 13px;
+      height: 13px;
+      border-radius: 2px;
+      background: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    .hw-btn--pause-gloss {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: 1px solid #1f242a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.92) 0%, rgba(210, 229, 247, 0.42) 12%, rgba(38, 48, 58, 0) 34%),
+        radial-gradient(circle at 50% 82%, rgba(210, 229, 247, 0.36) 0%, rgba(38, 48, 58, 0) 22%),
+        linear-gradient(180deg, #303843 0%, #1a1f25 58%, #11151a 100%);
+      box-shadow:
+        inset 0 2px 3px rgba(255, 255, 255, 0.06),
+        inset 0 -8px 12px rgba(0, 0, 0, 0.45),
+        0 2px 4px rgba(0, 0, 0, 0.55);
+    }
+
+    .hw-btn--pause-gloss::before {
       content: "";
       position: absolute;
-      left: 8px;
-      right: 8px;
-      top: 50%;
-      height: 1px;
-      transform: translateY(-50%);
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07) 20%, rgba(255, 255, 255, 0.07) 80%, transparent);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.72),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.05);
       pointer-events: none;
     }
 
-    .memory-ball {
+    .hw-btn--pause-gloss:active:not(:disabled) {
+      transform: scale(0.97);
+      box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.04),
+        inset 0 8px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .hw-btn--pause-gloss:active:not(:disabled)::before {
+      box-shadow:
+        inset 0 3px 6px rgba(0, 0, 0, 0.82),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .hw-btn-pause-icon {
       position: relative;
+      z-index: 1;
+      width: 14px;
+      height: 16px;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .hw-btn-pause-icon::before,
+    .hw-btn-pause-icon::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      border-radius: 1px;
+      background: linear-gradient(180deg, #07090c 0%, #141920 100%);
+      box-shadow:
+        inset 0 1px 3px rgba(0, 0, 0, 0.95),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .hw-btn-pause-icon::before { left: 1px; }
+    .hw-btn-pause-icon::after { right: 1px; }
+
+    .hw-btn--pause-gloss:active:not(:disabled) .hw-btn-pause-icon::before,
+    .hw-btn--pause-gloss:active:not(:disabled) .hw-btn-pause-icon::after {
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.98),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .hw-dpad-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .hw-dpad-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .hw-dpad-label-side {
+      width: 2.8em;
+      flex-shrink: 0;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .hw-dpad {
+      position: relative;
+      width: var(--dpad-size);
+      height: var(--dpad-size);
+      min-width: var(--dpad-size);
+      min-height: var(--dpad-size);
+      max-width: var(--dpad-size);
+      max-height: var(--dpad-size);
+      aspect-ratio: 1;
+      flex: 0 0 var(--dpad-size);
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.38);
+      background: radial-gradient(
+        circle at 32% 28%,
+        #2c3036 0%,
+        #252930 36%,
+        #1d2127 68%,
+        #15181d 100%
+      );
+      box-shadow:
+        -1px -1px 2px rgba(255, 255, 255, 0.08),
+        1px 2px 3px rgba(0, 0, 0, 0.42),
+        2px 4px 8px rgba(0, 0, 0, 0.28);
+    }
+
+    .hw-dpad::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle at 28% 22%,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.015) 38%,
+        transparent 72%
+      );
+      mask: radial-gradient(circle, transparent 0 47%, #000 47% 100%);
+      -webkit-mask: radial-gradient(circle, transparent 0 47%, #000 47% 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .hw-dpad::after {
+      content: "";
+      position: absolute;
+      inset: calc(var(--dpad-size) * 0.055);
+      border-radius: 50%;
+      background:
+        linear-gradient(
+          45deg,
+          transparent calc(50% - 0.5px),
+          rgba(90, 98, 108, 0.12) calc(50% - 0.5px),
+          rgba(90, 98, 108, 0.12) calc(50% + 0.5px),
+          transparent calc(50% + 0.5px)
+        ),
+        linear-gradient(
+          -45deg,
+          transparent calc(50% - 0.5px),
+          rgba(90, 98, 108, 0.1) calc(50% - 0.5px),
+          rgba(90, 98, 108, 0.1) calc(50% + 0.5px),
+          transparent calc(50% + 0.5px)
+        ),
+        radial-gradient(
+          circle at 36% 30%,
+          #1a1e23 0%,
+          #121519 58%,
+          #0c0e11 100%
+        );
+      box-shadow:
+        inset 0 3px 8px rgba(0, 0, 0, 0.68),
+        inset 0 1px 3px rgba(0, 0, 0, 0.52),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.38);
+      mask: radial-gradient(circle, transparent 0 19%, #000 19% 100%);
+      -webkit-mask: radial-gradient(circle, transparent 0 19%, #000 19% 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .hw-btn--wing {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(var(--dpad-size) * 0.095);
+      font-weight: 600;
+      color: rgba(216, 221, 227, 0.9);
+      z-index: 3;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .hw-btn--up,
+    .hw-btn--down {
+      width: calc(var(--dpad-size) * 0.512);
+      height: calc(var(--dpad-size) * 0.333);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .hw-btn--left,
+    .hw-btn--right {
+      width: calc(var(--dpad-size) * 0.333);
+      height: calc(var(--dpad-size) * 0.512);
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .hw-btn--up { top: calc(var(--dpad-size) * 0.036); }
+
+    .hw-btn--down { bottom: calc(var(--dpad-size) * 0.036); }
+
+    .hw-btn--left { left: calc(var(--dpad-size) * 0.036); }
+
+    .hw-btn--right { right: calc(var(--dpad-size) * 0.036); }
+
+    .hw-btn--wing:active:not(:disabled) {
+      opacity: 0.74;
+    }
+
+    .hw-btn--up:active:not(:disabled) { transform: translateX(-50%) scale(0.97); }
+    .hw-btn--down:active:not(:disabled) { transform: translateX(-50%) scale(0.97); }
+    .hw-btn--left:active:not(:disabled) { transform: translateY(-50%) scale(0.97); }
+    .hw-btn--right:active:not(:disabled) { transform: translateY(-50%) scale(0.97); }
+
+    .hw-dpad-arrow,
+    .hw-dpad-chevrons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(220, 225, 230, 0.88);
+      line-height: 1;
+      pointer-events: none;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+    }
+
+    .hw-dpad-arrow {
+      font-size: calc(var(--dpad-size) * 0.137);
+    }
+
+    .hw-dpad-chevrons {
+      gap: 1px;
+      font-size: calc(var(--dpad-size) * 0.107);
+      letter-spacing: -0.12em;
+    }
+
+    .hw-dpad-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .hw-btn--play {
+      width: calc(var(--dpad-size) * 0.369);
+      height: calc(var(--dpad-size) * 0.369);
+      border-radius: 50%;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(
+        circle at 38% 32%,
+        #343941 0%,
+        #282c33 42%,
+        #1c2026 76%,
+        #14171c 100%
+      );
+      border: 1px solid rgba(0, 0, 0, 0.48);
+      box-shadow:
+        -1px -1px 1px rgba(255, 255, 255, 0.06),
+        1px 2px 4px rgba(0, 0, 0, 0.5),
+        0 3px 7px rgba(0, 0, 0, 0.32);
+    }
+
+    .hw-btn--play.is-active {
+      background: radial-gradient(
+        circle at 38% 32%,
+        #262a30 0%,
+        #1e2228 42%,
+        #161920 76%,
+        #101317 100%
+      );
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.62),
+        0 1px 2px rgba(0, 0, 0, 0.28);
+    }
+
+    .hw-play-icon {
+      width: 0;
+      height: 0;
+      margin-left: calc(var(--dpad-size) * 0.024);
+      border-style: solid;
+      border-width: calc(var(--dpad-size) * 0.054) 0 calc(var(--dpad-size) * 0.054) calc(var(--dpad-size) * 0.083);
+      border-color: transparent transparent transparent var(--ink);
+      pointer-events: none;
+    }
+
+
+    .memory-strip {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: pan-x;
+      contain: layout style;
+    }
+
+    .memory-strip.is-dragging { cursor: grabbing; }
+
+    .memory-strip-track {
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      height: 100%;
+      will-change: transform;
+    }
+
+    .memory-strip-ticks {
+      position: absolute;
+      left: var(--panel-content-inset-x);
+      right: 0;
+      top: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .memory-tick {
+      position: absolute;
+      bottom: 4px;
+      width: 1px;
+      background: rgba(210, 210, 210, 0.35);
+      transform: translateX(-0.5px);
+    }
+
+    .memory-tick.is-major {
+      height: 16px;
+      background: rgba(226, 226, 226, 0.5);
+    }
+
+    .memory-tick.is-minor {
+      height: 9px;
+      background: rgba(190, 190, 190, 0.28);
+    }
+
+    .memory-strip-balls {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      height: 100%;
+      padding-left: var(--panel-content-inset-x);
+    }
+
+    .memory-slot {
+      flex-shrink: 0;
+      width: var(--slot-pitch);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 4px;
+      padding-top: 8px;
+      padding-left: 1px;
+    }
+
+    .memory-slot-time {
+      font-size: 6px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      line-height: 1;
+      color: rgba(90, 84, 78, 0.75);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      pointer-events: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .memory-slot.is-selected .memory-slot-time {
+      color: rgba(236, 228, 216, 0.82);
+    }
+
+    .memory-ball {
+      align-self: center;
       width: var(--ball-size);
       height: var(--ball-size);
       flex-shrink: 0;
       border-radius: 50%;
       overflow: hidden;
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      background: radial-gradient(circle at 35% 28%, rgba(70, 70, 78, 0.95), rgba(40, 40, 48, 0.9) 50%, rgba(24, 24, 30, 0.95) 100%);
-      box-shadow: var(--neu-soft);
+      contain: layout paint;
+      border: 2px solid rgba(0, 0, 0, 0.45);
+      background: radial-gradient(circle at 35% 28%, #6a635c, #3a3530 65%, #252220);
+      box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
       opacity: 0.72;
       transition:
-        width 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
-        height 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
-        opacity 0.25s ease,
-        box-shadow 0.3s ease;
+        width 0.32s cubic-bezier(0.34, 1.2, 0.64, 1),
+        height 0.32s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.2s ease,
+        box-shadow 0.32s ease,
+        border-color 0.2s ease;
       pointer-events: none;
-    }
-
-    .memory-ball.is-new {
-      animation: memoryBallPop 0.55s cubic-bezier(0.34, 1.35, 0.64, 1) forwards;
-    }
-
-    @keyframes memoryBallPop {
-      0% { opacity: 0; transform: scale(0.3); }
-      70% { opacity: 1; transform: scale(1.08); }
-      100% { opacity: 0.78; transform: scale(1); }
-    }
-
-    .memory-ball.is-new {
-      animation: memoryBallPop 0.55s cubic-bezier(0.34, 1.35, 0.64, 1) forwards;
-    }
-
-    @keyframes memoryBallPop {
-      0% { opacity: 0; transform: scale(0.3); }
-      70% { opacity: 1; transform: scale(1.08); }
-      100% { opacity: 0.78; transform: scale(1); }
     }
 
     .memory-ball.is-selected {
       width: var(--ball-size-active);
       height: var(--ball-size-active);
       opacity: 1;
-      z-index: 3;
-      border-color: rgba(255, 154, 98, 0.65);
+      border-color: rgba(214, 69, 69, 0.5);
       box-shadow:
-        var(--neu-soft),
-        0 0 0 3px rgba(255, 107, 44, 0.35),
-        0 0 28px var(--accent-glow);
+        0 0 0 2px rgba(214, 69, 69, 0.18),
+        0 0 14px var(--accent-rec-glow),
+        0 0 22px rgba(214, 69, 69, 0.22);
+    }
+
+    .memory-ball.is-new {
+      animation: memoryBallPop 0.45s ease forwards;
+    }
+
+    @keyframes memoryBallPop {
+      0% { opacity: 0; }
+      100% { opacity: 0.85; }
     }
 
     .memory-ball img {
-      position: relative;
-      z-index: 0;
       display: block;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      pointer-events: none;
     }
 
-    .memory-ball.mood-happy::after,
-    .memory-ball.mood-sad::after {
-      content: "";
+    .timeline-hint {
       position: absolute;
       inset: 0;
-      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0 16px;
+      font-size: 7px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      text-align: center;
+      color: rgba(200, 194, 184, 0.45);
+      line-height: 1.4;
       pointer-events: none;
-      z-index: 1;
+      z-index: 2;
     }
 
-    .memory-ball.mood-happy::after {
-      background: radial-gradient(
-        circle at 42% 36%,
-        rgba(255, 244, 150, 0.78) 0%,
-        rgba(255, 214, 72, 0.52) 38%,
-        rgba(255, 178, 48, 0.28) 62%,
-        transparent 88%
-      );
-      mix-blend-mode: screen;
-    }
-
-    .memory-ball.mood-sad::after {
-      background: radial-gradient(
-        circle at 42% 36%,
-        rgba(186, 248, 255, 0.76) 0%,
-        rgba(96, 210, 248, 0.5) 38%,
-        rgba(48, 140, 220, 0.26) 62%,
-        transparent 88%
-      );
-      mix-blend-mode: screen;
-    }
-
-    .memory-ball.mood-happy.is-selected {
-      border-color: rgba(255, 210, 90, 0.72);
-      box-shadow:
-        var(--neu-soft),
-        0 0 0 3px rgba(255, 190, 60, 0.38),
-        0 0 22px rgba(255, 200, 80, 0.45);
-    }
-
-    .memory-ball.mood-sad.is-selected {
-      border-color: rgba(110, 220, 255, 0.72);
-      box-shadow:
-        var(--neu-soft),
-        0 0 0 3px rgba(72, 190, 255, 0.38),
-        0 0 22px rgba(72, 200, 255, 0.42);
-    }
-
-    .readout-card {
-      padding: 14px 14px 12px;
-      border-radius: var(--radius-md);
-      background: var(--surface);
-      box-shadow: var(--neu-raised);
-    }
-
-    .readout-card.is-recessed {
-      box-shadow: var(--neu-pressed);
-      background: linear-gradient(145deg, var(--bg-deep) 0%, var(--surface) 100%);
-    }
-
-    .readout-title {
-      font-size: 9px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--ink-faint);
-      margin-bottom: 12px;
-    }
-
-    .readout-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .readout-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .readout-label {
-      font-size: 9px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--ink-muted);
-    }
-
-    .readout-value {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      font-variant-numeric: tabular-nums;
-      color: var(--ink);
-    }
-
-    .readout-value.is-accent { color: var(--accent); }
-
-    .meter-track {
-      margin-top: 4px;
-      height: 6px;
-      border-radius: 999px;
-      background: var(--bg-deep);
-      box-shadow: var(--neu-pressed);
-      overflow: hidden;
-    }
-
-    .meter-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, rgba(255, 107, 44, 0.35), var(--accent-soft), var(--accent));
-      box-shadow: 0 0 10px var(--accent-glow);
-      transition: width 0.12s linear;
-    }
-
-    .instrument-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      box-shadow: var(--neu-pressed);
-      font-size: 9px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--ink-muted);
-    }
-
-    .footer-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .timeline-rack.empty .timeline-hint { display: flex; }
+    .timeline-rack.empty .memory-strip { visibility: hidden; }
+    .timeline-rack.empty .timeline-playhead { opacity: 0.35; }
 
     .status-led {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
+      flex-shrink: 0;
       border-radius: 50%;
-      background: var(--ok);
-      box-shadow: 0 0 6px rgba(107, 154, 120, 0.45);
+      background: #5a7a62;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
     }
 
     .status-led.is-warn {
-      background: var(--accent);
-      box-shadow: 0 0 6px var(--accent-glow);
+      background: #7a746e;
+      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.35);
     }
 
-    @media (max-width: 820px) {
-      html, body {
-        height: auto;
-        min-height: 100dvh;
-        overflow-x: hidden;
-        overflow-y: auto;
-      }
-
-      body {
-        align-items: stretch;
-        justify-content: flex-start;
-        padding: 10px;
-      }
-
-      .instrument {
-        width: 100%;
-        height: auto;
-        min-height: 0;
-        max-height: none;
-        padding: 14px 12px;
-        gap: 12px;
-      }
-
-      .instrument-header {
-        grid-template-columns: 1fr;
-        gap: 12px;
-        padding: 2px 0;
-      }
-
-      .header-chips {
-        width: 100%;
-        max-width: 320px;
-      }
-
-      .instrument-body {
-        flex: none;
-        min-height: 0;
-      }
-
-      .sensor-stack {
-        flex: none;
-      }
-
-      .sensor-stack-body {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
-        gap: 10px;
-        flex: none;
-        min-height: 0;
-      }
-
-      .viewport-panel {
-        grid-column: 1;
-        grid-row: 1;
-        min-height: 0;
-        height: auto;
-        overflow: visible;
-      }
-
-      .viewport-recess {
-        flex: none;
-        width: 100%;
-        min-height: 0;
-        height: auto;
-        aspect-ratio: 4 / 3;
-        max-height: min(56vw, 340px);
-      }
-
-      .viewport-panel .instrument-footer {
-        font-size: 8px;
-        padding: 8px 10px;
-        flex-wrap: wrap;
-        row-gap: 4px;
-      }
-
-      .footer-status {
-        min-width: 0;
-        flex: 1 1 auto;
-      }
-
-      #footerStatus {
-        word-break: break-word;
-        line-height: 1.4;
-      }
-
-      #footerClock {
-        flex-shrink: 0;
-      }
-
-      .vf-hud {
-        padding: 10px 12px;
-      }
-
-      .vf-hud-top {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
-
-      .vf-transmission {
-        max-width: 100%;
-        margin-right: 0;
-        font-size: 9px;
-        line-height: 1.45;
-      }
-
-      .vf-hud-stats {
-        gap: 4px 14px;
-      }
-
-      .telemetry-panel {
-        grid-column: 1;
-        grid-row: 2;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .telemetry-panel .readout-card {
-        padding: 8px 10px;
-        min-width: 0;
-      }
-
-      .readout-value {
-        font-size: 11px;
-      }
-
-      .memory-rack {
-        grid-column: 1;
-        grid-row: 3;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        padding: 10px 8px 12px;
-        min-height: 0;
-        height: auto;
-      }
-
-      .memory-dial-wrap {
-        flex: 0 0 auto;
-        width: var(--dial-width);
-        max-width: 100%;
-        min-height: 168px;
-        height: 168px;
-        max-height: none;
-      }
-
-      .memory-track-frame {
-        border-radius: calc(var(--dial-width) / 2);
-      }
-
-      .dial-arrow {
-        left: -2px;
-      }
+    .vf-intro-cursor {
+      color: var(--ink-faint);
     }
 
-    @media (max-width: 480px) {
-      body {
-        padding: 8px;
-      }
+    .typewriter-track {
+      display: inline;
+    }
 
-      .instrument {
-        padding: 12px 10px;
-        border-radius: var(--radius-lg);
-      }
+    .typewriter-char {
+      opacity: 0;
+    }
 
-      .brand {
-        font-size: 13px;
-        letter-spacing: 0.16em;
-      }
+    .typewriter-char.is-revealed {
+      opacity: 1;
+    }
 
-      .chip {
-        padding: 6px 8px;
-      }
+    .typewriter-cursor {
+      display: inline-block;
+      margin-left: 1px;
+      animation: typewriterBlink 0.9s step-end infinite;
+    }
 
-      .telemetry-panel {
-        gap: 8px;
-      }
+    .typewriter-cursor.is-done {
+      opacity: 0;
+      animation: none;
+    }
 
-      .readout-title {
-        margin-bottom: 6px;
-      }
+    @keyframes typewriterBlink {
+      50% { opacity: 0; }
+    }
 
+    @media (max-width: 640px) {
       :root {
-        --ball-size-active: 76px;
+        --panel-split: 54%;
+        --dpad-size: min(232px, 58vw);
+        --screen-inset: 6px;
+        --topbar-h: 84px;
+        --slot-pitch: 54px;
+        --ball-size: 34px;
+        --ball-size-active: 40px;
+      }
+
+      .energy-dot-matrix,
+      #energyDotMatrix {
+        width: min(100%, 72px);
       }
     }
   </style>
 </head>
 <body>
-  <div class="instrument">
-    <header class="instrument-header">
-      <div class="brand-block">
-        <div class="brand">CoreCam</div>
-        <div class="brand-sub">Live Energy Camera</div>
+  <div class="device" id="device">
+    <div
+      class="onboarding-overlay"
+      id="onboardingOverlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboardingLine1"
+      tabindex="0"
+    >
+      <button
+        type="button"
+        class="onboarding-close-btn"
+        id="btnOnboardingClose"
+        aria-label="Close"
+      >×</button>
+      <div class="onboarding-overlay-content" id="vfIntro" aria-live="polite">
+        <p class="vf-intro-line" id="onboardingLine1"></p>
+        <p class="vf-intro-line vf-intro-line--secondary" id="onboardingLine2"></p>
+        <p class="onboarding-tap-hint" id="onboardingTapHint">Tap to continue</p>
       </div>
-      <div class="header-chips">
-        <button
-          type="button"
-          class="chip chip-capture is-live"
-          id="chipCapture"
-          title="Save a core memory now (or auto-saves at peak joy or sorrow)"
-        >
-          Capture
-          <span class="chip-val" id="chipCaptureVal">LIVE</span>
-        </button>
-        <button
-          type="button"
-          class="chip chip-memories"
-          id="chipMemories"
-          title="Jump to your latest core memory"
-        >
-          Memories
-          <span class="chip-val" id="chipMemoriesVal">0</span>
-        </button>
+    </div>
+
+    <header class="device-topbar" aria-label="Core memory timeline">
+      <div class="timeline-rack empty" id="memoryRack">
+        <div class="timeline-playhead" id="timelinePlayhead" aria-hidden="true"></div>
+        <div class="memory-strip" id="memoryDial" aria-label="Scroll core memories">
+          <div class="memory-strip-track" id="memoryDialStrip">
+            <div class="memory-strip-ticks" id="memoryTicks" aria-hidden="true"></div>
+            <div class="memory-strip-balls" id="memoryBalls"></div>
+          </div>
+        </div>
+        <p class="timeline-hint" id="memoryRackHint">Peak joy or sorrow captures a memory</p>
       </div>
     </header>
 
-    <main class="instrument-body">
-      <div class="sensor-stack">
-        <div class="panel-label">Primary Sensor</div>
-        <div class="sensor-stack-body">
-          <section class="viewport-panel">
-            <footer class="instrument-footer">
-              <div class="footer-status">
-                <span class="status-led" id="statusLed"></span>
-                <span id="footerStatus">Initializing sensor…</span>
-              </div>
-              <span id="footerClock">—</span>
-            </footer>
-            <div class="viewport-recess" id="viewport">
-              <canvas id="display"></canvas>
-              <div class="vf-reticle" aria-hidden="true"></div>
-              <div class="vf-hud">
-                <div class="vf-hud-top">
-                  <div
-                    class="vf-transmission"
-                    id="vfTransmission"
-                    aria-label="Hold your absolute best smile! Energy levels are indicated by your facial expression and movement."
-                  >
-                    <span class="vf-transmission-prefix" aria-hidden="true">&gt; </span>
-                    <span class="vf-transmission-text" id="vfTransmissionText"></span>
-                    <span class="vf-transmission-cursor" id="vfTransmissionCursor" aria-hidden="true">▌</span>
-                  </div>
-                  <div class="vf-rec">
-                    <span class="vf-rec-dot"></span>
-                    Live
-                  </div>
-                </div>
-                <div class="vf-hud-stats">
-                  <div class="vf-stat">
-                    <span class="vf-stat-label">Energy</span>
-                    <span class="vf-stat-value" id="hudEnergy">—</span>
-                  </div>
-                  <div class="vf-stat">
-                    <span class="vf-stat-label">Motion</span>
-                    <span class="vf-stat-value" id="hudMotion">—</span>
-                  </div>
+    <main class="device-main">
+      <section class="device-panel device-panel--view" aria-label="Live viewfinder and playback">
+        <div class="view-stage" id="viewport">
+          <div class="view-stage-stack">
+          <div class="view-stage-screens">
+            <div class="screens-recess">
+            <div class="screen-recess screen-recess--live">
+              <div class="vf-aperture vf-aperture--live">
+                <canvas id="display"></canvas>
+                <div class="vf-alert" id="vfAlert" hidden aria-live="assertive">
+                  <p class="vf-alert-line" id="vfAlertLine"></p>
                 </div>
               </div>
             </div>
-          </section>
-
-          <section class="telemetry-panel" id="telemetry" aria-label="Telemetry statistics">
-            <div class="readout-card">
-              <div class="readout-title">Energy</div>
-              <div class="readout-row">
-                <span class="readout-label">Level</span>
-                <span class="readout-value is-accent" id="telEnergy">—</span>
-              </div>
-              <div class="meter-track"><div class="meter-fill" id="meterEnergy"></div></div>
-            </div>
-            <div class="readout-card">
-              <div class="readout-title">Motion</div>
-              <div class="readout-row">
-                <span class="readout-label">Level</span>
-                <span class="readout-value" id="telMotion">—</span>
-              </div>
-              <div class="meter-track"><div class="meter-fill" id="meterMotion"></div></div>
-            </div>
-            <div class="readout-card">
-              <div class="readout-title">People</div>
-              <div class="readout-row">
-                <span class="readout-label">In frame</span>
-                <span class="readout-value" id="telPeople">0</span>
+            <div class="screen-recess screen-recess--playback">
+              <div class="vf-aperture vf-aperture--playback" id="playbackViewport">
+                <img id="playbackDisplay" class="playback-media" alt="" hidden />
+                <p
+                  class="playback-placeholder"
+                  id="playbackPlaceholder"
+                  aria-live="polite"
+                  aria-label="Hold your best smile to form a core memory!"
+                >
+                  <span class="lcd-typewriter-line">
+                    <span class="lcd-typewriter-prefix" aria-hidden="true">&gt; </span>
+                    <span id="playbackIdleBody"></span>
+                  </span>
+                </p>
               </div>
             </div>
-            <div class="readout-card">
-              <div class="readout-title">Expression</div>
-              <div class="readout-row">
-                <span class="readout-label">State</span>
-                <span class="readout-value" id="telExpr">—</span>
+            </div>
+          </div>
+          <div class="view-stage-meters">
+            <div class="energy-led-bar" id="energyLedBar" role="img" aria-label="Energy level">
+              <span class="energy-led-label">Energy</span>
+              <div class="energy-led-track" id="energyLedTrack"></div>
+            </div>
+            <div class="readout-row">
+              <div class="readout">
+                <span class="readout-label">Facial Expr</span>
+                <span class="readout-value" id="facialExprReadout">00</span>
+              </div>
+              <div class="readout">
+                <span class="readout-label">Movement</span>
+                <span class="readout-value" id="movementReadout">00</span>
               </div>
             </div>
-          </section>
-
-          <aside class="memory-rack empty" id="memoryRack" aria-label="Core memory bank">
-            <p class="memory-rack-label">Core Memory</p>
-            <div class="memory-dial-wrap">
-              <div class="dial-arrow" aria-hidden="true" title="Selected memory"></div>
-              <div class="memory-track-frame">
-                <div class="memory-dial" id="memoryDial" aria-label="Scroll memories">
-                  <div class="memory-dial-strip" id="memoryDialStrip">
-                    <div class="memory-dial-balls" id="memoryBalls"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p class="memory-rack-hint" id="memoryRackHint">Peak joy or sorrow captures a memory</p>
-          </aside>
+          </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section class="device-panel device-panel--controls" aria-label="Device controls">
+          <div class="controls-stack">
+          <div class="hw-deck" aria-label="Playback controls">
+            <div class="hw-deck-main">
+              <div class="hw-dpad-wrap">
+                <span class="hw-btn-label">Prev.</span>
+                <div class="hw-dpad-row">
+                  <span class="hw-btn-label hw-dpad-label-side">Slow</span>
+                  <div class="hw-dpad" role="group" aria-label="Transport and memory navigation">
+                    <button type="button" class="hw-btn hw-btn--wing hw-btn--up" id="btnPrevRow" aria-label="Previous memory">
+                      <span class="hw-dpad-arrow" aria-hidden="true">▲</span>
+                    </button>
+                    <button type="button" class="hw-btn hw-btn--wing hw-btn--down" id="btnNextRow" aria-label="Next memory">
+                      <span class="hw-dpad-arrow" aria-hidden="true">▼</span>
+                    </button>
+                    <button type="button" class="hw-btn hw-btn--wing hw-btn--left" id="btnSlow" aria-label="Slower playback">
+                      <span class="hw-dpad-chevrons" aria-hidden="true">‹‹</span>
+                    </button>
+                    <button type="button" class="hw-btn hw-btn--wing hw-btn--right" id="btnFast" aria-label="Faster playback">
+                      <span class="hw-dpad-chevrons" aria-hidden="true">››</span>
+                    </button>
+                    <div class="hw-dpad-center">
+                      <button type="button" class="hw-btn hw-btn--play" id="btnPlay" aria-label="Play memory">
+                        <span class="hw-play-icon" aria-hidden="true"></span>
+                      </button>
+                    </div>
+                  </div>
+                  <span class="hw-btn-label hw-dpad-label-side">Fast</span>
+                </div>
+                <span class="hw-btn-label">Next</span>
+              </div>
+            </div>
+
+            <div class="hw-deck-side">
+              <div class="hw-deck-unit">
+                <button
+                  type="button"
+                  class="hw-btn hw-btn--rec-toggle is-active"
+                  id="chipCapture"
+                  title="Save a core memory now"
+                  aria-label="Record core memory"
+                >
+                  <span class="rec-toggle-pill" aria-hidden="true"></span>
+                  <span class="rec-toggle-dot" aria-hidden="true"></span>
+                </button>
+                <span class="hw-btn-label">Rec</span>
+              </div>
+              <div class="hw-deck-unit">
+                <button
+                  type="button"
+                  class="hw-btn hw-btn--pause-gloss"
+                  id="btnStopPause"
+                  aria-label="Pause playback"
+                >
+                  <span class="hw-btn-pause-icon" aria-hidden="true"></span>
+                </button>
+                <span class="hw-btn-label">Pause</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
+
+    <button
+      type="button"
+      class="onboarding-info-btn"
+      id="btnOnboardingInfo"
+      aria-label="Show introduction"
+      title="Introduction"
+    >ⓘ</button>
   </div>
 
   <video id="video" autoplay playsinline muted></video>
@@ -1129,42 +1835,86 @@
     }
     const ctx = canvas.getContext("2d", { alpha: false });
     const viewport = document.getElementById("viewport");
-    const hudEnergy = document.getElementById("hudEnergy");
-    const hudMotion = document.getElementById("hudMotion");
-    const telEnergy = document.getElementById("telEnergy");
-    const telPeople = document.getElementById("telPeople");
-    const telExpr = document.getElementById("telExpr");
-    const telMotion = document.getElementById("telMotion");
-    const meterEnergy = document.getElementById("meterEnergy");
-    const meterMotion = document.getElementById("meterMotion");
+    const onboardingOverlay = document.getElementById("onboardingOverlay");
+    const btnOnboardingInfo = document.getElementById("btnOnboardingInfo");
+    const btnOnboardingClose = document.getElementById("btnOnboardingClose");
+    const onboardingTapHint = document.getElementById("onboardingTapHint");
+    const energyLedBar = document.getElementById("energyLedBar");
+    const energyLedTrack = document.getElementById("energyLedTrack");
+    const facialExprReadout = document.getElementById("facialExprReadout");
+    const movementReadout = document.getElementById("movementReadout");
+    const playbackViewport = document.getElementById("playbackViewport");
+    const playbackDisplay = document.getElementById("playbackDisplay");
+    const playbackPlaceholder = document.getElementById("playbackPlaceholder");
+    const playbackIdleBody = document.getElementById("playbackIdleBody");
     const chipCapture = document.getElementById("chipCapture");
-    const chipCaptureVal = document.getElementById("chipCaptureVal");
-    const chipMemories = document.getElementById("chipMemories");
-    const chipMemoriesVal = document.getElementById("chipMemoriesVal");
+    const btnPrevRow = document.getElementById("btnPrevRow");
+    const btnNextRow = document.getElementById("btnNextRow");
+    const btnSlow = document.getElementById("btnSlow");
+    const btnFast = document.getElementById("btnFast");
+    const btnPlay = document.getElementById("btnPlay");
+    const btnStopPause = document.getElementById("btnStopPause");
     const footerStatus = document.getElementById("footerStatus");
+    const vfGuidance = playbackPlaceholder;
+    const vfAlert = document.getElementById("vfAlert");
+    const vfAlertLine = document.getElementById("vfAlertLine");
     const footerClock = document.getElementById("footerClock");
     const statusLed = document.getElementById("statusLed");
     const memoryRack = document.getElementById("memoryRack");
     const memoryDial = document.getElementById("memoryDial");
     const memoryDialStrip = document.getElementById("memoryDialStrip");
+    const memoryTicks = document.getElementById("memoryTicks");
     const memoryBalls = document.getElementById("memoryBalls");
+    const timelinePlayhead = document.getElementById("timelinePlayhead");
 
-    let dialScrollY = 0;
+    const ENERGY_LED_COLS = 72;
+    const ENERGY_LED_ROWS = 5;
+    const ENERGY_LED_SEGMENTS = ENERGY_LED_COLS * ENERGY_LED_ROWS;
+    let energyLedSegments = [];
+    let playbackAnimTimer = null;
+    let playbackAnimBall = null;
+    let playbackPaused = false;
+    let reelPlaying = false;
+    let reelProgrammatic = false;
+    let reelWasActive = false;
+    let reelAdvanceTimer = null;
+    let reelPlayheadTimer = null;
+    let reelStartTimestamp = 0;
+    let reelTotalDurationMs = 0;
+    let reelHoldProgress = 0;
+    /** null = play from leftmost; number = user-pinned start index */
+    let userPinnedReelStart = null;
+    const PLAYBACK_SPEEDS = [0.5, 1, 2];
+    let playbackSpeedIndex = 1;
+    let selectedDialIndex = 0;
+    let playheadIndex = 0;
     let dialDragging = false;
     let dialPointerId = null;
-    let dialDragStartY = 0;
-    let dialDragStartScroll = 0;
+
+    const SEG_MAP = {
+      0: "abcdef",
+      1: "bc",
+      2: "abdeg",
+      3: "abcdg",
+      4: "bcfg",
+      5: "acdfg",
+      6: "acdefg",
+      7: "abc",
+      8: "abcdefg",
+      9: "abcdfg",
+      "-": "g"
+    };
 
     const GIF_WORKER_URL = "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js";
     if (typeof GIF !== "undefined") GIF.workerScript = GIF_WORKER_URL;
-    const GIF_OUT_WIDTH = 120;
-    const GIF_OUT_HEIGHT = 90;
+    const GIF_OUT_WIDTH = 320;
+    const GIF_OUT_HEIGHT = 240;
     const GIF_DELAY_MS = 90;
     const GIF_ENCODE_TIMEOUT_MS = 8000;
     const CAPTURE_WATCHDOG_MS = 4500;
     const PRE_BUFFER_MS = 1400;
     const POST_CAPTURE_MS = 2000;
-    const FRAME_SAMPLE_MS = 100;
+    const FRAME_SAMPLE_MS = 80;
     const MEMORY_COOLDOWN_MS = 5000;
     const PEAK_SUSTAIN_MS = 400;
     const PRE_BUFFER_FRAMES = Math.ceil(PRE_BUFFER_MS / FRAME_SAMPLE_MS);
@@ -1191,10 +1941,14 @@
 
     let displayW = 0;
     let displayH = 0;
-    const MAX_PROCESS_WIDTH = 400;
-    const DETECTION_INTERVAL_MS = 160;
-    const UI_UPDATE_EVERY_N_FRAMES = 2;
+    const MAX_PROCESS_WIDTH = 288;
+    const DETECTION_INTERVAL_MS = 200;
+    const UI_UPDATE_EVERY_N_FRAMES = 4;
+    const ENERGY_UPDATE_EVERY_N_FRAMES = 3;
     let uiUpdateFrame = 0;
+    let lastEnergyLedActiveCols = -1;
+    let lastEnergyLedFillKey = "";
+    let lastRenderDurationMs = 0;
     let bgLUT = [];
     let coolLUT = [];
     let hotLUT = [];
@@ -1217,8 +1971,8 @@
     let motionSpeedEmberTmp = new Float32Array(0);
 
     const detectCanvas = document.createElement("canvas");
-    detectCanvas.width = 224;
-    detectCanvas.height = 168;
+    detectCanvas.width = 192;
+    detectCanvas.height = 144;
     const detectCtx = detectCanvas.getContext("2d", { willReadFrequently: true });
 
     const expressionScores = {
@@ -1233,34 +1987,43 @@
 
     const coolPalette = [
       { l: 0,   r: 0,   g: 0,   b: 0   },
-      { l: 55,  r: 2,   g: 8,   b: 28  },
-      { l: 95,  r: 8,   g: 22,  b: 52  },
-      { l: 130, r: 32,  g: 8,   b: 90  },
-      { l: 165, r: 104, g: 8,   b: 120 },
-      { l: 200, r: 175, g: 22,  b: 85  },
-      { l: 230, r: 220, g: 80,  b: 20  },
-      { l: 255, r: 255, g: 205, b: 70  }
+      { l: 42,  r: 6,   g: 14,  b: 38  },
+      { l: 78,  r: 16,  g: 32,  b: 72  },
+      { l: 108, r: 52,  g: 10,  b: 112 },
+      { l: 138, r: 138, g: 12,  b: 132 },
+      { l: 168, r: 198, g: 28,  b: 78  },
+      { l: 198, r: 242, g: 96,  b: 16  },
+      { l: 228, r: 255, g: 188, b: 42  },
+      { l: 255, r: 255, g: 232, b: 98  }
     ];
 
     const hotPalette = [
       { l: 0,   r: 0,   g: 0,   b: 0   },
-      { l: 55,  r: 2,   g: 10,  b: 24  },
-      { l: 95,  r: 10,  g: 26,  b: 44  },
-      { l: 125, r: 58,  g: 8,   b: 80  },
-      { l: 155, r: 145, g: 12,  b: 95  },
-      { l: 185, r: 215, g: 28,  b: 45  },
-      { l: 210, r: 250, g: 95,  b: 0   },
-      { l: 230, r: 255, g: 165, b: 0   },
-      { l: 245, r: 255, g: 220, b: 40  },
+      { l: 42,  r: 8,   g: 16,  b: 34  },
+      { l: 76,  r: 22,  g: 38,  b: 62  },
+      { l: 102, r: 82,  g: 10,  b: 98  },
+      { l: 128, r: 168, g: 18,  b: 108 },
+      { l: 154, r: 232, g: 42,  b: 42  },
+      { l: 178, r: 255, g: 128, b: 0   },
+      { l: 202, r: 255, g: 198, b: 12  },
+      { l: 228, r: 255, g: 238, b: 58  },
       { l: 255, r: 255, g: 255, b: 255 }
     ];
 
     const bgPalette = [
       { l: 0,   r: 0,  g: 0,  b: 0  },
-      { l: 90,  r: 0,  g: 8,  b: 20 },
-      { l: 170, r: 2,  g: 22, b: 40 },
-      { l: 255, r: 8,  g: 36, b: 64 }
+      { l: 90,  r: 6,  g: 16, b: 34 },
+      { l: 170, r: 12, g: 38, b: 68 },
+      { l: 255, r: 22, g: 58, b: 96 }
     ];
+
+    const THERMAL_BG_GAMMA = 0.98;
+    const THERMAL_LUM_GAMMA = 0.78;
+    const THERMAL_LUM_CAP_IDLE = 228;
+    const THERMAL_LUM_CAP_FACE = 238;
+    const THERMAL_OUTPUT_LIFT = 16;
+    const THERMAL_OUTPUT_CONTRAST = 1.14;
+    const THERMAL_OUTPUT_SAT = 1.28;
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
@@ -1355,35 +2118,74 @@
       if (motionHeat < 0.3) {
         const u = motionHeat / 0.3;
         return {
-          r: Math.round(lerp(34, 86, u)),
-          g: Math.round(lerp(6, 14, u)),
-          b: Math.round(lerp(146, 138, u))
+          r: Math.round(lerp(48, 108, u)),
+          g: Math.round(lerp(10, 22, u)),
+          b: Math.round(lerp(168, 152, u))
         };
       }
       // Medium: purple -> magenta/pink.
       if (motionHeat < 0.55) {
         const u = (motionHeat - 0.3) / 0.25;
         return {
-          r: Math.round(lerp(86, 206, u)),
-          g: Math.round(lerp(14, 22, u)),
-          b: Math.round(lerp(138, 106, u))
+          r: Math.round(lerp(108, 228, u)),
+          g: Math.round(lerp(22, 32, u)),
+          b: Math.round(lerp(152, 98, u))
         };
       }
       // Fast: magenta/pink -> orange.
       if (motionHeat < 0.82) {
         const u = (motionHeat - 0.55) / 0.27;
         return {
-          r: Math.round(lerp(206, 255, u)),
-          g: Math.round(lerp(22, 126, u)),
-          b: Math.round(lerp(106, 18, u))
+          r: Math.round(lerp(228, 255, u)),
+          g: Math.round(lerp(32, 148, u)),
+          b: Math.round(lerp(98, 12, u))
         };
       }
       // Very fast: orange -> yellow/amber (still no white trails).
       const u = (motionHeat - 0.82) / 0.33;
       return {
         r: 255,
-        g: Math.round(lerp(126, 245, u)),
-        b: Math.round(lerp(18, 12, u))
+        g: Math.round(lerp(148, 252, u)),
+        b: Math.round(lerp(12, 8, u))
+      };
+    }
+
+    function polishThermalPixel(r, g, b, peakRoll = 0) {
+      const gray = (0.299 * r) + (0.587 * g) + (0.114 * b);
+      const bright = clamp((gray - 118) / 132, 0, 1);
+      const liftScale = 1 - (peakRoll * bright * 0.62);
+      const satScale = 1 - (peakRoll * bright * 0.24);
+      const contrastScale = 1 - (peakRoll * bright * 0.18);
+      let rr = gray + ((r - gray) * (THERMAL_OUTPUT_SAT * satScale));
+      let gg = gray + ((g - gray) * (THERMAL_OUTPUT_SAT * satScale));
+      let bb = gray + ((b - gray) * (THERMAL_OUTPUT_SAT * satScale));
+      const lift = THERMAL_OUTPUT_LIFT * liftScale;
+      const contrast = 1 + ((THERMAL_OUTPUT_CONTRAST - 1) * contrastScale);
+      rr = ((rr - 128) * contrast) + 128 + lift;
+      gg = ((gg - 128) * contrast) + 128 + (lift * 0.94);
+      bb = ((bb - 128) * contrast) + 128 + (lift * 0.48);
+      return {
+        r: Math.round(clamp(rr, 0, 255)),
+        g: Math.round(clamp(gg, 0, 255)),
+        b: Math.round(clamp(bb, 0, 255))
+      };
+    }
+
+    function compressFaceHighlights(r, g, b, peakRoll, faceWeight) {
+      if (peakRoll < 0.04 || faceWeight < 0.12) {
+        return { r, g, b };
+      }
+      const lum = ((0.299 * r) + (0.587 * g) + (0.114 * b)) / 255;
+      const threshold = lerp(0.5, 0.4, peakRoll);
+      if (lum <= threshold) {
+        return { r, g, b };
+      }
+      const excess = clamp((lum - threshold) / (1 - threshold), 0, 1);
+      const compress = peakRoll * faceWeight * excess * excess * 0.72;
+      return {
+        r: Math.round(clamp(lerp(r, 228, compress), 0, 255)),
+        g: Math.round(clamp(lerp(g, 108, compress), 0, 255)),
+        b: Math.round(clamp(lerp(b, 42, compress), 0, 255))
       };
     }
 
@@ -1407,8 +2209,8 @@
       }
       return {
         r: 255,
-        g: Math.round(lerp(200, 238, t)),
-        b: Math.round(lerp(55, 115, t))
+        g: Math.round(lerp(200, 212, t)),
+        b: Math.round(lerp(55, 72, t))
       };
     }
 
@@ -1466,7 +2268,8 @@
       }
     }
 
-    function getCoverTransform(targetW, targetH) {
+    /** object-fit: cover — fill viewfinder, crop overflow. */
+    function getVideoFitTransform(targetW, targetH) {
       const vw = video.videoWidth;
       const vh = video.videoHeight;
       if (!vw || !vh) return null;
@@ -1480,8 +2283,8 @@
 
     function mapDetectBoxToTarget(box, targetW, targetH) {
       if (!box) return null;
-      const detectTransform = getCoverTransform(detectCanvas.width, detectCanvas.height);
-      const targetTransform = getCoverTransform(targetW, targetH);
+      const detectTransform = getVideoFitTransform(detectCanvas.width, detectCanvas.height);
+      const targetTransform = getVideoFitTransform(targetW, targetH);
       if (!detectTransform || !targetTransform) return null;
 
       const srcX = (box.x - detectTransform.dx) / detectTransform.scale;
@@ -1498,41 +2301,41 @@
     }
 
     let canvasDpr = 1;
-    let resizeCanvasTimer = null;
     let dialLayoutTimer = null;
+    let lastCanvasLayoutW = 0;
+    let lastCanvasLayoutH = 0;
+    let canvasLayoutReady = false;
 
     function isMobileLayout() {
-      return window.matchMedia("(max-width: 820px)").matches;
+      return window.matchMedia("(max-width: 640px)").matches;
+    }
+
+    function measureDisplayAperture() {
+      const rect = canvas?.getBoundingClientRect();
+      return {
+        w: Math.floor(rect?.width || 0),
+        h: Math.floor(rect?.height || 0)
+      };
+    }
+
+    function layoutViewfinderFromFeed() {
+      resizeCanvases();
     }
 
     function resizeCanvases() {
-      if (!viewport) return;
+      if (!canvas) return;
 
-      let w = Math.floor(viewport.clientWidth || 0);
-      let h = Math.floor(viewport.clientHeight || 0);
-      if (w < 16 || h < 16) {
-        const rect = viewport.getBoundingClientRect();
-        w = Math.max(w, Math.floor(rect.width || 0));
-        h = Math.max(h, Math.floor(rect.height || 0));
-      }
-      if (w < 16 || h < 16) {
-        const panel = viewport.parentElement?.getBoundingClientRect();
-        const mobile = isMobileLayout();
-        w = Math.max(w, Math.floor(panel?.width || 0), mobile ? 280 : 480);
-        h = Math.max(h, Math.floor(panel?.height || 0), mobile ? 210 : 360);
-        if (mobile) viewport.style.minHeight = "";
-        else viewport.style.minHeight = `${h}px`;
-      } else {
-        viewport.style.minHeight = "";
-      }
+      const { w, h } = measureDisplayAperture();
+      if (w < 16 || h < 16) return;
+      if (w === lastCanvasLayoutW && h === lastCanvasLayoutH) return;
 
-      displayW = Math.max(16, w);
-      displayH = Math.max(16, h);
-      canvasDpr = Math.min(window.devicePixelRatio || 1, isMobileLayout() ? 1 : 1.25);
+      lastCanvasLayoutW = w;
+      lastCanvasLayoutH = h;
+      displayW = w;
+      displayH = h;
+      canvasDpr = 1;
       canvas.width = Math.max(1, Math.floor(displayW * canvasDpr));
       canvas.height = Math.max(1, Math.floor(displayH * canvasDpr));
-      canvas.style.width = `${displayW}px`;
-      canvas.style.height = `${displayH}px`;
       ctx.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0);
       ctx.imageSmoothingEnabled = true;
 
@@ -1540,21 +2343,25 @@
       const procH = Math.max(1, Math.round((procW / displayW) * displayH));
       offscreen.width = procW;
       offscreen.height = procH;
+      canvasLayoutReady = true;
 
-      if (!resizeCanvases.logged && displayW >= 16) {
+      if (!resizeCanvases.logged) {
         console.log("viewfinder size", displayW, "x", displayH, "@", canvasDpr.toFixed(1), "dpr");
         resizeCanvases.logged = true;
       }
     }
 
-    function drawMirroredVideoCover(ctx2d, targetW, targetH, clear = true) {
-      const transform = getCoverTransform(targetW, targetH);
+    function drawMirroredVideoFit(ctx2d, targetW, targetH, clear = true) {
+      const transform = getVideoFitTransform(targetW, targetH);
       if (!transform) {
-        ctx2d.fillStyle = "#12141a";
+        ctx2d.fillStyle = "#000000";
         ctx2d.fillRect(0, 0, targetW, targetH);
         return false;
       }
-      if (clear) ctx2d.clearRect(0, 0, targetW, targetH);
+      if (clear) {
+        ctx2d.fillStyle = "#000000";
+        ctx2d.fillRect(0, 0, targetW, targetH);
+      }
       const drawW = video.videoWidth * transform.scale;
       const drawH = video.videoHeight * transform.scale;
       ctx2d.save();
@@ -1566,11 +2373,11 @@
     }
 
     function drawVideoCover() {
-      return drawMirroredVideoCover(offCtx, offscreen.width, offscreen.height, false);
+      return drawMirroredVideoFit(offCtx, offscreen.width, offscreen.height, false);
     }
 
     function drawVideoCoverTo(ctx2d, targetW, targetH) {
-      return drawMirroredVideoCover(ctx2d, targetW, targetH, true);
+      return drawMirroredVideoFit(ctx2d, targetW, targetH, true);
     }
 
     function isEmotionallyNeutral(expressions) {
@@ -1597,13 +2404,13 @@
       const sad = expressions.sad || 0;
       const angry = expressions.angry || 0;
       if (isEmotionallyNeutral(expressions)) return 0;
-      if (happy < 0.42 && surprised < 0.4) return 0;
-      if (neutral > 0.36 && happy < 0.52 && surprised < 0.46) return 0;
-      const positiveSignal = (happy * 1.22) + (surprised * 0.88);
-      const dampen = (neutral * 0.58) + (sad * 0.12) + (angry * 0.08);
+      if (happy < 0.5 && surprised < 0.48) return 0;
+      if (neutral > 0.34 && happy < 0.58 && surprised < 0.54) return 0;
+      const positiveSignal = (happy * 1.06) + (surprised * 0.72);
+      const dampen = (neutral * 0.68) + (sad * 0.18) + (angry * 0.12);
       const raw = positiveSignal - dampen;
-      if (raw < 0.22) return 0;
-      return clamp(Math.pow(clamp(raw, 0, 1) / 0.98, 0.78), 0, 1);
+      if (raw < 0.34) return 0;
+      return clamp(Math.pow(clamp(raw, 0, 1) / 0.96, 1.24), 0, 1);
     }
 
     function computeSadIntensity(expressions) {
@@ -1613,13 +2420,13 @@
       const happy = expressions.happy || 0;
       const angry = expressions.angry || 0;
       if (isEmotionallyNeutral(expressions)) return 0;
-      if (sad < 0.44 && fearful < 0.4) return 0;
-      if (neutral > 0.36 && sad < 0.5 && fearful < 0.44) return 0;
-      const sadSignal = (sad * 1.38) + (fearful * 0.48);
-      const dampen = (neutral * 0.56) + (happy * 0.16) + (angry * 0.1);
+      if (sad < 0.48 && fearful < 0.44) return 0;
+      if (neutral > 0.34 && sad < 0.54 && fearful < 0.48) return 0;
+      const sadSignal = (sad * 1.2) + (fearful * 0.42);
+      const dampen = (neutral * 0.64) + (happy * 0.22) + (angry * 0.12);
       const raw = sadSignal - dampen;
-      if (raw < 0.22) return 0;
-      return clamp(Math.pow(clamp(raw, 0, 1) / 0.96, 0.72), 0, 1);
+      if (raw < 0.32) return 0;
+      return clamp(Math.pow(clamp(raw, 0, 1) / 0.94, 1.18), 0, 1);
     }
 
     function computeExpressionIntensity(expressions) {
@@ -1700,20 +2507,24 @@
         || lastDetection?.expression === "neutral";
       const intensityTarget = isNeutral ? 0 : targetExpressionIntensity;
       const intLerp = intensityTarget > expressionIntensity
-        ? (isSad ? 0.3 : 0.24)
-        : (isNeutral ? 0.4 : 0.24);
+        ? (isSad ? 0.22 : 0.18)
+        : (isNeutral ? 0.4 : 0.2);
       expressionIntensity = lerp(expressionIntensity, intensityTarget, intLerp);
       if (isNeutral) expressionIntensity = Math.min(expressionIntensity, 0.04);
       const faceLerp = targetFaceScore > faceScore ? 0.28 : 0.1;
       faceScore = lerp(faceScore, targetFaceScore, faceLerp);
-      const curvePow = isSad ? 0.72 : 0.78;
-      const emotionCurve = Math.pow(clamp(expressionIntensity, 0, 1), curvePow);
-      const expressionEnergy = lerp(0.03, 1.0, emotionCurve);
+      const intensityWindow = clamp((expressionIntensity - 0.18) / 0.82, 0, 1);
+      const curvePow = isSad ? 1.34 : 1.54;
+      const emotionCurve = Math.pow(intensityWindow, curvePow);
+      const confidence = clamp(((lastDetection?.probability || 0) - 0.55) / 0.45, 0, 1);
+      const topCap = clamp(0.88 + (Math.pow(confidence, 1.4) * 0.12), 0.88, 1);
+      const expressionEnergy = lerp(0.03, topCap, emotionCurve);
       const nextEnergy = clamp(expressionEnergy, 0, 1);
       const energyLerp = isNeutral
         ? 0.36
-        : (nextEnergy > energyScore ? (isSad ? 0.3 : 0.26) : 0.22);
+        : (nextEnergy > energyScore ? (isSad ? 0.22 : 0.18) : 0.22);
       energyScore = lerp(energyScore, nextEnergy, energyLerp);
+      if (nextEnergy >= 0.995) energyScore = Math.max(energyScore, nextEnergy);
       if (isNeutral) energyScore = Math.min(energyScore, 0.22);
       rebuildActiveLUT();
     }
@@ -1797,57 +2608,158 @@
       ball.dataset.captureMood = resolved;
     }
 
+    function buildSegDigit(char) {
+      const digit = document.createElement("span");
+      digit.className = "seg-digit";
+      digit.setAttribute("role", "presentation");
+      ["a", "b", "c", "d", "e", "f", "g"].forEach((name) => {
+        const seg = document.createElement("span");
+        seg.className = `seg seg-${name}`;
+        seg.dataset.segment = name;
+        digit.appendChild(seg);
+      });
+      setSegDigitChar(digit, char);
+      return digit;
+    }
+
+    function setSegDigitChar(digitEl, char) {
+      const on = SEG_MAP[String(char)] || "";
+      digitEl.querySelectorAll(".seg").forEach((seg) => {
+        const name = seg.dataset.segment || "";
+        seg.classList.toggle("is-on", on.includes(name));
+      });
+    }
+
+    const THERMAL_LED_LUM_MIN = 42;
+    const THERMAL_LED_LUM_MAX = 255;
+    const THERMAL_LED_LUM_STEP = 26;
+
+    function energyLedNoiseStep(hash) {
+      const roll = hash % 100;
+      if (roll < 68) return 0;
+      if (roll < 84) return -1;
+      return 1;
+    }
+
+    function energyThermalColorFromLum(lum) {
+      ensureThermalLUTs();
+      const idx = Math.min(255, Math.max(0, Math.round(clamp(lum, 0, 255))));
+      const color = hotLUT[idx] || hotLUT[255];
+      return {
+        solid: `rgb(${color.r}, ${color.g}, ${color.b})`,
+        glow: `rgba(${color.r}, ${color.g}, ${color.b}, 0.92)`
+      };
+    }
+
+    function energyLedPixelThermalLum(col, row, index) {
+      const baseT = ENERGY_LED_COLS <= 1 ? 0 : col / (ENERGY_LED_COLS - 1);
+      const baseLum = lerp(THERMAL_LED_LUM_MIN, THERMAL_LED_LUM_MAX, baseT);
+      const hash = ((col * 73856093) ^ (row * 19349663) ^ (index * 83492791)) >>> 0;
+      const noiseStep = energyLedNoiseStep(hash);
+      return clamp(
+        baseLum + (noiseStep * THERMAL_LED_LUM_STEP),
+        THERMAL_LED_LUM_MIN,
+        THERMAL_LED_LUM_MAX
+      );
+    }
+
+    function initEnergyLedBar() {
+      if (!energyLedTrack) return;
+      energyLedTrack.style.gridTemplateColumns = `repeat(${ENERGY_LED_COLS}, 1fr)`;
+      energyLedTrack.style.gridTemplateRows = `repeat(${ENERGY_LED_ROWS}, 1fr)`;
+      energyLedTrack.replaceChildren();
+      energyLedSegments = [];
+      for (let i = 0; i < ENERGY_LED_SEGMENTS; i += 1) {
+        const seg = document.createElement("span");
+        seg.className = "energy-led-seg";
+        energyLedTrack.appendChild(seg);
+        energyLedSegments.push(seg);
+      }
+    }
+
+    function updateEnergyLedBar(percent, atCore, energyHot) {
+      if (!energyLedSegments.length) return;
+      const fillRatio = atCore ? 1 : clamp(energyScore, 0, 1);
+      const activeCols = fillRatio >= 0.999
+        ? ENERGY_LED_COLS
+        : Math.min(ENERGY_LED_COLS, Math.round(fillRatio * ENERGY_LED_COLS));
+      const fillKey = `${activeCols}:${atCore ? 1 : 0}:${energyHot ? 1 : 0}`;
+      if (fillKey === lastEnergyLedFillKey) {
+        if (energyLedBar) {
+          energyLedBar.classList.toggle("is-hot", energyHot && !atCore);
+          energyLedBar.classList.toggle("is-max", atCore);
+        }
+        return;
+      }
+      lastEnergyLedFillKey = fillKey;
+      lastEnergyLedActiveCols = activeCols;
+      energyLedSegments.forEach((seg, index) => {
+        const col = index % ENERGY_LED_COLS;
+        const row = Math.floor(index / ENERGY_LED_COLS);
+        const on = col < activeCols;
+        seg.classList.toggle("is-on", on);
+        if (!on) {
+          seg.style.removeProperty("--pixel-color");
+          seg.style.removeProperty("--pixel-glow");
+          return;
+        }
+        const c = energyThermalColorFromLum(energyLedPixelThermalLum(col, row, index));
+        seg.style.setProperty("--pixel-color", c.solid);
+        seg.style.setProperty("--pixel-glow", c.glow);
+      });
+      if (energyLedBar) {
+        energyLedBar.classList.toggle("is-hot", energyHot && !atCore);
+        energyLedBar.classList.toggle("is-max", atCore);
+        energyLedBar.setAttribute(
+          "aria-label",
+          atCore ? "Energy level: maximum" : `Energy level: ${getEnergyDisplayPercent()} percent`
+        );
+      }
+    }
+
+    function getFacialExprDisplayValue() {
+      return Math.round(clamp(expressionIntensity, 0, 1) * 100);
+    }
+
+    function getMovementDisplayValue() {
+      return Math.round(clamp(moveLevelDisplay, 0, 1) * 100);
+    }
+
+    function updateReadouts() {
+      if (facialExprReadout) {
+        facialExprReadout.textContent = String(getFacialExprDisplayValue()).padStart(2, "0");
+      }
+      if (movementReadout) {
+        movementReadout.textContent = String(getMovementDisplayValue()).padStart(2, "0");
+      }
+    }
+
     function updateInstrumentUI() {
-      const hasFace = Boolean(lastDetection);
       const energyPct = getEnergyDisplayPercent();
       const atCore = energyPct >= 100;
-      const energyLabel = atCore ? "CORE" : `${energyPct}%`;
-      const motionPct = Math.round(clamp(moveLevelDisplay, 0, 1) * 100);
-      const exprName = hasFace ? lastDetection.expression.toUpperCase() : "NONE";
       const energyHot = energyPct >= 68 && !atCore;
 
-      if (hudEnergy) {
-        hudEnergy.textContent = energyLabel;
-        hudEnergy.classList.toggle("is-hot", energyHot);
-        hudEnergy.classList.toggle("is-core", atCore);
-      }
-      if (hudMotion) hudMotion.textContent = `${motionPct}%`;
-      if (telEnergy) {
-        telEnergy.textContent = energyLabel;
-        telEnergy.classList.toggle("is-core", atCore);
-        telEnergy.classList.toggle("is-accent", !atCore);
-      }
-      if (telPeople) telPeople.textContent = String(peopleCount);
-      if (telExpr) {
-        telExpr.textContent = hasFace
-          ? `${exprName} · ${lastDetection.probability.toFixed(2)}`
-          : "—";
-      }
-      if (telMotion) telMotion.textContent = `${motionPct}%`;
-      if (meterEnergy) meterEnergy.style.width = atCore ? "100%" : `${energyPct}%`;
-      if (meterMotion) meterMotion.style.width = `${motionPct}%`;
+      updateEnergyLedBar(energyPct, atCore, energyHot);
+      updateReadouts();
 
       const memoryCount = getDialBallCount();
       const capturing = captureBusy || captureFinalizing;
 
-      if (chipCaptureVal) {
-        chipCaptureVal.textContent = capturing ? "REC" : (atCore ? "CORE" : "LIVE");
-      }
       if (chipCapture) {
         chipCapture.disabled = capturing;
-        chipCapture.classList.toggle("is-live", atCore && !capturing);
+        chipCapture.classList.toggle("is-active", (atCore || energyHot) && !capturing);
         chipCapture.classList.toggle("is-capturing", capturing);
         chipCapture.title = capturing
           ? "Recording core memory…"
-          : "Click to save a core memory now";
+          : "Save a core memory now";
       }
-      if (chipMemoriesVal) chipMemoriesVal.textContent = String(memoryCount);
-      if (chipMemories) {
-        chipMemories.disabled = memoryCount === 0;
-        chipMemories.title = memoryCount
-          ? `View memories (${memoryCount}) — click for latest`
-          : "No core memories yet — peak joy or sorrow";
+      if (btnPrevRow) btnPrevRow.disabled = memoryCount === 0;
+      if (btnNextRow) btnNextRow.disabled = memoryCount === 0;
+      if (btnPlay) {
+        btnPlay.disabled = memoryCount === 0;
+        btnPlay.classList.toggle("is-active", !playbackPaused && memoryCount > 0);
       }
+      if (btnStopPause) btnStopPause.disabled = memoryCount === 0;
 
       if (statusLed) statusLed.classList.toggle("is-warn", !modelsReady || peopleCount === 0);
     }
@@ -1893,7 +2805,10 @@
         const canvas = document.createElement("canvas");
         canvas.width = GIF_OUT_WIDTH;
         canvas.height = GIF_OUT_HEIGHT;
-        canvas.getContext("2d").drawImage(source, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
+        const cctx = canvas.getContext("2d");
+        cctx.imageSmoothingEnabled = true;
+        cctx.imageSmoothingQuality = "high";
+        cctx.drawImage(source, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
         out.push(canvas);
       }
       if (!out.length) {
@@ -1901,7 +2816,10 @@
         const canvas = document.createElement("canvas");
         canvas.width = GIF_OUT_WIDTH;
         canvas.height = GIF_OUT_HEIGHT;
-        canvas.getContext("2d").drawImage(fallback, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
+        const cctx = canvas.getContext("2d");
+        cctx.imageSmoothingEnabled = true;
+        cctx.imageSmoothingQuality = "high";
+        cctx.drawImage(fallback, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
         out.push(canvas);
       }
       if (out.length === 1) {
@@ -1920,8 +2838,11 @@
         const out = document.createElement("canvas");
         out.width = GIF_OUT_WIDTH;
         out.height = GIF_OUT_HEIGHT;
-        out.getContext("2d").drawImage(frame, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
-        return out.toDataURL("image/jpeg", 0.88);
+        const octx = out.getContext("2d");
+        octx.imageSmoothingEnabled = true;
+        octx.imageSmoothingQuality = "high";
+        octx.drawImage(frame, 0, 0, GIF_OUT_WIDTH, GIF_OUT_HEIGHT);
+        return out.toDataURL("image/webp", 0.96);
       } catch {
         return null;
       }
@@ -1959,6 +2880,52 @@
       if (!ball || !frames?.length) return;
       ball._captureFrames = frames.map((frame) => cloneCanvasSource(frame));
       ball._framePreviewUrls = null;
+      syncBallPlaybackMeta(ball, frames);
+    }
+
+    function syncBallPlaybackMeta(ball, frames = ball?._captureFrames) {
+      if (!ball || !frames?.length) return;
+      const gifFrames = prepareGifFrames(frames);
+      const count = Math.max(1, gifFrames.length);
+      ball.dataset.frameCount = String(count);
+      ball.dataset.gifFrameCount = String(count);
+      ball.dataset.playbackMs = String(count * GIF_DELAY_MS);
+    }
+
+    function getBallPlayFrameCount(ball) {
+      const encoded = parseInt(ball?.dataset?.gifFrameCount, 10);
+      if (Number.isFinite(encoded) && encoded > 0) return encoded;
+      if (ball?._captureFrames?.length) return prepareGifFrames(ball._captureFrames).length;
+      return 1;
+    }
+
+    function getBallPlaybackDurationMs(ball) {
+      const base = parseInt(ball?.dataset?.playbackMs, 10);
+      const frames = getBallPlayFrameCount(ball);
+      const ms = Number.isFinite(base) && base > 0 ? base : frames * GIF_DELAY_MS;
+      return Math.max(getPlaybackDelayMs(), Math.round(ms / PLAYBACK_SPEEDS[playbackSpeedIndex]));
+    }
+
+    function getBallPlayFrameUrls(ball) {
+      const urls = getFramePreviewCache(ball);
+      const targetCount = getBallPlayFrameCount(ball);
+      if (!urls.length) return [];
+      if (urls.length <= targetCount) return urls.slice(0, targetCount);
+      const out = [];
+      for (let i = 0; i < targetCount; i += 1) {
+        const idx = Math.min(urls.length - 1, Math.floor((i * urls.length) / targetCount));
+        out.push(urls[idx]);
+      }
+      return out;
+    }
+
+    function markUserReelStart(index) {
+      if (reelProgrammatic) return;
+      const n = getDialBallCount();
+      if (!n) return;
+      const idx = clamp(index, 0, n - 1);
+      userPinnedReelStart = idx === 0 ? null : idx;
+      reelWasActive = false;
     }
 
     function getFramePreviewCache(ball) {
@@ -1978,22 +2945,250 @@
       }
     }
 
-    function playBallFrameLoop(ball) {
-      const img = ball?.querySelector("img");
+    function getPlaybackDelayMs() {
+      return Math.max(72, Math.round(GIF_DELAY_MS / PLAYBACK_SPEEDS[playbackSpeedIndex]));
+    }
+
+    function getSelectedMemoryBall() {
+      if (!memoryBalls) return null;
+      const balls = [...memoryBalls.querySelectorAll(".memory-ball")];
+      return balls[getSelectedDialIndex()] || null;
+    }
+
+    function stopPlaybackScreen() {
+      if (playbackAnimTimer) {
+        clearTimeout(playbackAnimTimer);
+        playbackAnimTimer = null;
+      }
+      if (reelAdvanceTimer) {
+        clearTimeout(reelAdvanceTimer);
+        reelAdvanceTimer = null;
+      }
+      playbackAnimBall = null;
+    }
+
+    function stopContinuousPlayhead() {
+      if (reelPlayheadTimer) {
+        cancelAnimationFrame(reelPlayheadTimer);
+        reelPlayheadTimer = null;
+      }
+    }
+
+    function pausePlayback() {
+      if (reelPlaying) reelWasActive = true;
+      if (reelTotalDurationMs > 0) {
+        const elapsed = Math.max(0, performance.now() - reelStartTimestamp);
+        reelHoldProgress = clamp(elapsed / reelTotalDurationMs, 0, 1);
+      }
+      playbackPaused = true;
+      reelPlaying = false;
+      stopContinuousPlayhead();
+      stopPlaybackScreen();
+      if (btnPlay) btnPlay.classList.remove("is-active");
+      showSelectedBallPreview(getSelectedMemoryBall());
+    }
+
+    function finishMemoryReel() {
+      reelHoldProgress = 1;
+      updateTimelinePlayheadProgress(reelHoldProgress, false);
+      reelPlaying = false;
+      reelWasActive = true;
+      playbackPaused = true;
+      playheadIndex = 0;
+      stopContinuousPlayhead();
+      stopPlaybackScreen();
+      if (btnPlay) btnPlay.classList.remove("is-active");
+    }
+
+    function getReelPlayStartIndex() {
+      if (reelWasActive) return getSelectedDialIndex();
+      return 0;
+    }
+
+    function resumePlayback() {
+      const n = getDialBallCount();
+      if (!n) return;
+      startMemoryReel(getReelPlayStartIndex());
+    }
+
+    function stepMemoryRow(delta) {
+      const n = getDialBallCount();
+      if (!n) return;
+      if (reelPlaying) pausePlayback();
+      const idx = ((getSelectedDialIndex() + delta) % n + n) % n;
+      markUserReelStart(idx);
+      playbackPaused = true;
+      reelProgrammatic = true;
+      snapDialToIndex(idx);
+      reelProgrammatic = false;
+    }
+
+    function setPlaybackSpeedIndex(index) {
+      playbackSpeedIndex = clamp(index, 0, PLAYBACK_SPEEDS.length - 1);
+      if (reelPlaying && !playbackPaused) {
+        const idx = getSelectedDialIndex();
+        stopPlaybackScreen();
+        playReelFromIndex(idx);
+      }
+    }
+
+    function clearPlaybackScreen() {
+      stopPlaybackScreen();
+      if (playbackDisplay) {
+        playbackDisplay.removeAttribute("src");
+        playbackDisplay.hidden = true;
+      }
+      playbackViewport?.classList.remove("has-media");
+    }
+
+    function showPlaybackStill(src) {
+      if (!playbackDisplay || !src) return;
+      stopPlaybackScreen();
+      playbackDisplay.src = src;
+      playbackDisplay.hidden = false;
+      playbackViewport?.classList.add("has-media");
+    }
+
+    function playPlaybackFrameLoop(ball) {
       const urls = getFramePreviewCache(ball);
-      if (!img || urls.length < 2) {
-        if (img && urls[0]) img.src = urls[0];
+      if (!playbackDisplay || urls.length < 2) {
+        if (urls[0]) showPlaybackStill(urls[0]);
         return;
       }
-      stopBallFrameLoop(ball);
+      stopPlaybackScreen();
+      playbackAnimBall = ball;
       let frameIndex = 0;
       const step = () => {
-        if (!ball.classList.contains("is-selected")) return;
-        img.src = urls[frameIndex % urls.length];
+        if (playbackAnimBall !== ball || !ball.classList.contains("is-selected")) return;
+        playbackDisplay.src = urls[frameIndex % urls.length];
+        playbackDisplay.hidden = false;
+        playbackViewport?.classList.add("has-media");
         frameIndex += 1;
-        ball._frameAnimTimer = setTimeout(step, GIF_DELAY_MS);
+        playbackAnimTimer = setTimeout(step, getPlaybackDelayMs());
       };
       step();
+    }
+
+    function playBallMemoryOnce(ball, onComplete) {
+      if (!ball || !playbackDisplay) {
+        onComplete?.();
+        return;
+      }
+      stopPlaybackScreen();
+      playbackAnimBall = ball;
+
+      const urls = getBallPlayFrameUrls(ball);
+      const poster = ball.dataset.posterUrl || "";
+      const gifUrl = ball.dataset.gifUrl;
+
+      const finish = () => {
+        if (playbackAnimBall !== ball) return;
+        stopPlaybackScreen();
+        onComplete?.();
+      };
+
+      const reelSegment = () => reelPlaying && !playbackPaused;
+
+      if (urls.length >= 2) {
+        let frameIndex = 0;
+        const step = () => {
+          if (playbackAnimBall !== ball || playbackPaused) return;
+          if (reelPlaying && !reelSegment()) return;
+          playbackDisplay.src = urls[frameIndex];
+          playbackDisplay.hidden = false;
+          playbackViewport?.classList.add("has-media");
+          frameIndex += 1;
+          if (frameIndex >= urls.length) {
+            finish();
+            return;
+          }
+          playbackAnimTimer = setTimeout(step, getPlaybackDelayMs());
+        };
+        step();
+        return;
+      }
+
+      if (isAnimatedGifUrl(gifUrl)) {
+        const startGif = () => {
+          if (playbackAnimBall !== ball || playbackPaused) return;
+          if (reelPlaying && !reelSegment()) return;
+          playbackDisplay.onerror = () => {
+            playbackDisplay.onerror = null;
+            if (poster) showPlaybackStill(poster);
+            finish();
+          };
+          const needsRestart = playbackDisplay.src === gifUrl;
+          if (needsRestart) {
+            playbackDisplay.src = "";
+            requestAnimationFrame(() => {
+              showPlaybackStill(gifUrl);
+              reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
+            });
+          } else {
+            showPlaybackStill(gifUrl);
+            reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
+          }
+        };
+        if (ball.dataset.gifReady === "1") {
+          startGif();
+          return;
+        }
+        const probe = new Image();
+        probe.onload = () => {
+          ball.dataset.gifReady = "1";
+          if (playbackAnimBall === ball && (!reelPlaying || reelSegment())) startGif();
+        };
+        probe.onerror = () => {
+          if (poster) showPlaybackStill(poster);
+          reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
+        };
+        probe.src = gifUrl;
+        return;
+      }
+
+      if (poster) showPlaybackStill(poster);
+      reelAdvanceTimer = setTimeout(finish, getBallPlaybackDurationMs(ball));
+    }
+
+    function playReelFromIndex(index) {
+      if (!reelPlaying || playbackPaused) return;
+      const balls = [...memoryBalls.querySelectorAll(".memory-ball")];
+      if (index >= balls.length) {
+        finishMemoryReel();
+        return;
+      }
+      const ball = balls[index];
+      selectedDialIndex = index;
+      playheadIndex = index;
+      playBallMemoryOnce(ball, () => {
+        if (!reelPlaying || playbackPaused) return;
+        playReelFromIndex(index + 1);
+      });
+    }
+
+    function startMemoryReel(fromIndex = 0) {
+      const n = getDialBallCount();
+      if (!n) return;
+      const start = clamp(fromIndex, 0, n - 1);
+      reelPlaying = true;
+      reelWasActive = true;
+      playbackPaused = false;
+      if (btnPlay) btnPlay.classList.add("is-active");
+      selectedDialIndex = start;
+      reelStartTimestamp = performance.now();
+      reelTotalDurationMs = getReelDurationMs(start);
+      startContinuousPlayhead();
+      playReelFromIndex(start);
+    }
+
+    function showSelectedBallPreview(ball) {
+      if (!ball) {
+        clearPlaybackScreen();
+        return;
+      }
+      const poster = ball.dataset.posterUrl || "";
+      if (poster) showPlaybackStill(poster);
+      else clearPlaybackScreen();
     }
 
     function buildGifFromFrames(frames) {
@@ -2137,11 +3332,22 @@
         ]);
         if (!isAnimatedGifUrl(encoded)) return;
         updateBallMedia(ball, encoded, preview);
+        syncBallPlaybackMeta(ball, ball._captureFrames);
+        updateMemorySlotTimestamps();
         ball.dataset.gifReady = "1";
-        if (ball.classList.contains("is-selected")) playBallMemory(ball);
+        if (ball.classList.contains("is-selected") && reelPlaying) {
+          playReelFromIndex(getSelectedDialIndex());
+        } else if (ball.classList.contains("is-selected") && !playbackPaused) {
+          playBallMemory(ball);
+        }
       } catch (error) {
         console.warn("GIF encode failed; using frame playback", error);
-        if (ball.classList.contains("is-selected")) playBallMemory(ball);
+        updateMemorySlotTimestamps();
+        if (ball.classList.contains("is-selected") && reelPlaying) {
+          playReelFromIndex(getSelectedDialIndex());
+        } else if (ball.classList.contains("is-selected") && !playbackPaused) {
+          playBallMemory(ball);
+        }
       } finally {
         delete ball.dataset.gifEncoding;
       }
@@ -2269,7 +3475,7 @@
 
       try {
         const faces = await faceapi
-          .detectAllFaces(detectCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 192, scoreThreshold: 0.35 }))
+          .detectAllFaces(detectCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.38 }))
           .withFaceLandmarks()
           .withFaceExpressions();
 
@@ -2283,7 +3489,7 @@
           const live = getLiveExpression(result.expressions);
           targetExpressionIntensity = neutralFace
             ? 0
-            : computeExpressionIntensity(result.expressions);
+            : Math.pow(computeExpressionIntensity(result.expressions), 1.16);
           lastDetection = {
             expression: neutralFace ? "neutral" : live.name,
             probability: neutralFace
@@ -2324,7 +3530,7 @@
     }
 
     function drawViewfinderPlaceholder(message) {
-      ctx.fillStyle = "#12141a";
+      ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, displayW, displayH);
       ctx.fillStyle = "rgba(236, 228, 216, 0.5)";
       ctx.font = '11px "IBM Plex Mono", monospace';
@@ -2332,28 +3538,28 @@
     }
 
     function renderFrame() {
-      const now = performance.now();
+      const frameStart = performance.now();
       try {
-      if (displayW < 16 || displayH < 16) resizeCanvases();
-      ensureThermalLUTs();
-      updateLiveEnergy();
+      if (!canvasLayoutReady) resizeCanvases();
+      if (uiUpdateFrame % ENERGY_UPDATE_EVERY_N_FRAMES === 0) updateLiveEnergy();
 
       const videoReady = video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2;
       offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
       if (!videoReady) {
-        offCtx.fillStyle = "#12141a";
+        offCtx.fillStyle = "#000000";
         offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
         ctx.drawImage(offscreen, 0, 0, displayW, displayH);
         drawViewfinderPlaceholder("Acquiring sensor feed…");
-        updateInstrumentUI();
+        if (uiUpdateFrame % UI_UPDATE_EVERY_N_FRAMES === 0 || captureBusy) updateInstrumentUI();
       } else {
       drawVideoCover();
 
       const procW = offscreen.width;
       const procH = offscreen.height;
       const pixelCount = procW * procH;
-      const emberW = Math.max(160, procW >> 1);
-      const emberH = Math.max(120, procH >> 1);
+      const emberW = Math.max(96, procW >> 2);
+      const emberH = Math.max(72, procH >> 2);
+      const skipTrailPass = lastRenderDurationMs > 22;
       const emberCount = emberW * emberH;
       if (prevLumaFrame.length !== pixelCount) {
         prevLumaFrame = new Float32Array(pixelCount);
@@ -2456,6 +3662,15 @@
       const body = getBodyTrailBounds(hasFace, cx, cy, rx, ry, faceHeight, procH);
       const exprHeat = clamp(expressionIntensity, 0, 1);
       const exprHeatCurve = Math.pow(exprHeat, 0.88);
+      const energyDriven = clamp(energyScore + (exprHeatCurve * 0.62), 0, 1.45);
+      const energyRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 0.92);
+      const glowRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 1.22);
+      const peakRoll = Math.pow(
+        clamp((Math.max(energyRamp, exprHeatCurve) - 0.62) / 0.38, 0, 1),
+        0.82
+      );
+      const glowRampAdjusted = glowRamp * (1 - (peakRoll * 0.34));
+      const thermalBoostScale = lerp(1.18, 0.86, peakRoll);
       const baseExpression = lastDetection?.expression || "neutral";
       const currentExpression = (moodExpressionStable === "sad" || moodExpressionStable === "angry")
         ? moodExpressionStable
@@ -2479,7 +3694,7 @@
         const rawLum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
         const delta = Math.abs(rawLum - prevLumaFrame[p]);
         prevLumaFrame[p] = rawLum;
-        const bgIndex = Math.min(255, Math.floor(Math.pow(rawLum, 1.15) * 255));
+        const bgIndex = Math.min(255, Math.floor(Math.pow(rawLum, THERMAL_BG_GAMMA) * 255));
         const bg = bgLUT[bgIndex] || { r: 0, g: 0, b: 0 };
 
         let warmMix = 0;
@@ -2509,36 +3724,41 @@
           trailMask = Math.pow(personContain, 1.15);
 
           const skinLikely = clamp(((r - b) + 20) / 120, 0, 1) * clamp(((g - b) + 10) / 90, 0, 1);
-          const heatPotential = clamp((Math.pow(rawLum, 1.22) * 0.95) + (skinLikely * 0.6), 0, 1);
-          const energyDriven = clamp(energyScore + (exprHeatCurve * 0.62), 0, 1.45);
-          const energyRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 0.92);
-          const glowRamp = Math.pow(clamp(energyDriven, 0, 1.45) / 1.45, 1.22);
+          const heatPotential = clamp((Math.pow(rawLum, 1.02) * 1.08) + (skinLikely * 0.72), 0, 1);
+          const energyRampLocal = energyRamp;
+          const glowRampLocal = glowRampAdjusted;
           const neutralLift = clamp((0.58 - energyScore) / 0.58, 0, 1);
           const neutralFaceArea = Math.max(containFace, Math.pow(containForehead, 0.72));
           const neutralSpread = Math.pow(neutralFaceArea, 0.72) * neutralLift;
 
-          warmMix = humanInfluence * heatPotential * (0.28 + (energyRamp * 1.45));
-          warmMix += wholeFace * (0.05 + energyRamp * 0.72);
-          warmMix += edgeSoft * energyRamp * 0.22;
-          warmMix += bodyInfluence * energyRamp * 0.22;
-          warmMix += faceCore * glowRamp * (0.42 + exprHeatCurve * 0.62);
-          warmMix += neutralSpread * 0.1;
-          warmMix += containFace * exprHeatCurve * 0.38;
-          warmMix += faceCore * exprHeatCurve * 0.35;
-          warmMix *= personContain * 0.9;
-          const maxWarmMix = lerp(0.76, 0.9, exprHeatCurve);
+          warmMix = humanInfluence * heatPotential * (0.34 + (energyRampLocal * 1.58));
+          warmMix += wholeFace * (0.08 + energyRampLocal * 0.82);
+          warmMix += edgeSoft * energyRampLocal * 0.28;
+          warmMix += bodyInfluence * energyRampLocal * 0.28;
+          warmMix += faceCore * glowRampLocal * (0.5 + exprHeatCurve * 0.72);
+          warmMix += neutralSpread * 0.14;
+          warmMix += containFace * exprHeatCurve * 0.46;
+          warmMix += faceCore * exprHeatCurve * 0.42;
+          warmMix *= personContain * 0.94;
+          const maxWarmMix = lerp(0.84, 0.96, exprHeatCurve) - (peakRoll * 0.16);
           warmMix = clamp(warmMix, 0, maxWarmMix);
           thermalBoost = (
-            (faceCore * glowRamp * (0.26 + exprHeatCurve * 0.34)) +
-            (wholeFace * energyRamp * (0.14 + exprHeatCurve * 0.16)) +
-            (bodyInfluence * energyRamp * 0.1) +
-            (neutralSpread * 0.07)
+            (faceCore * glowRampLocal * (0.32 + exprHeatCurve * 0.4)) +
+            (wholeFace * energyRampLocal * (0.18 + exprHeatCurve * 0.2)) +
+            (bodyInfluence * energyRampLocal * 0.14) +
+            (neutralSpread * 0.1)
           ) * personContain;
-          thermalBoost += exprHeatCurve * 0.1 * personContain;
+          thermalBoost += exprHeatCurve * 0.14 * personContain;
+          thermalBoost *= (1 - (peakRoll * 0.42));
         }
 
-        const boostedLum = clamp(Math.pow(rawLum, 0.88) + thermalBoost, 0, 1);
-        const lumCap = hasFace ? Math.round(lerp(205, 236, Math.pow(exprHeatCurve, 0.95))) : 210;
+        const boostedLum = clamp(Math.pow(rawLum, THERMAL_LUM_GAMMA) + (thermalBoost * thermalBoostScale), 0, 1);
+        const lumCap = hasFace
+          ? Math.round(
+            lerp(THERMAL_LUM_CAP_IDLE, THERMAL_LUM_CAP_FACE, Math.pow(exprHeatCurve, 0.95)) -
+            (peakRoll * 26)
+          )
+          : THERMAL_LUM_CAP_IDLE;
         const lumIndex = Math.min(lumCap, Math.floor(boostedLum * 255));
         const thermal = activeLUT[lumIndex] || bg;
 
@@ -2551,25 +3771,37 @@
             const eyHot = (y - cy) / ry;
             const distHot = Math.sqrt((exHot * exHot) + (eyHot * eyHot));
             const hotRadius = 1.18;
+            let faceHot = 0;
             if (distHot < hotRadius) {
               const thermalHotMix = clamp((exprHeatCurve - 0.5) / 0.5, 0, 1);
               const moodHotMix = moodDrivenExpression ? clamp((expressionConfidence - 0.45) / 0.55, 0, 1) : 0;
               const hotMix = Math.max(thermalHotMix, moodHotMix);
               const hotMixShaped = hotMix * hotMix * (3 - (2 * hotMix));
-              const faceHot = Math.pow(clamp(1 - (distHot / hotRadius), 0, 1), 2.15);
+              faceHot = Math.pow(clamp(1 - (distHot / hotRadius), 0, 1), 2.15);
               const amberHot = facePeakColor(currentExpression, hotMixShaped);
-              const hotBlendGain = moodDrivenExpression ? 0.54 : 0.33;
+              const hotBlendGain = (moodDrivenExpression ? 0.62 : 0.42) * (1 - (peakRoll * 0.52));
               const hotBlend = hotMixShaped * faceHot * hotBlendGain;
               outR = Math.round(lerp(outR, amberHot.r, hotBlend));
               outG = Math.round(lerp(outG, amberHot.g, hotBlend));
               outB = Math.round(lerp(outB, amberHot.b, hotBlend));
             }
 
-            const detailStrength = clamp(exprHeatCurve * 0.52, 0.12, 0.42);
-            const detail = (rawLum - 0.5) * detailStrength * 70;
+            const detailStrength = clamp((exprHeatCurve * 0.62) + (peakRoll * 0.16), 0.18, 0.62);
+            const detail = (rawLum - 0.5) * detailStrength * 96;
             outR = clamp(outR + detail, 0, 255);
             outG = clamp(outG + detail * 0.88, 0, 255);
             outB = clamp(outB + detail * 0.42, 0, 255);
+
+            if (peakRoll > 0.04) {
+              const exCompress = (x - cx) / rx;
+              const eyCompress = (y - cy) / ry;
+              const distCompress = Math.sqrt((exCompress * exCompress) + (eyCompress * eyCompress));
+              const faceWeight = Math.pow(clamp(1 - distCompress, 0, 1), 1.6);
+              const compressed = compressFaceHighlights(outR, outG, outB, peakRoll, faceWeight);
+              outR = compressed.r;
+              outG = compressed.g;
+              outB = compressed.b;
+            }
           }
 
           const adaptiveDeltaFloor = hasFace ? 0.055 : 0.08;
@@ -2594,16 +3826,16 @@
             if (moveHit > frameMotionPeak) frameMotionPeak = moveHit;
           }
 
-          data[i] = outR;
-          data[i + 1] = outG;
-          data[i + 2] = outB;
+          const polished = polishThermalPixel(outR, outG, outB, peakRoll);
+          data[i] = polished.r;
+          data[i + 1] = polished.g;
+          data[i + 2] = polished.b;
         }
       }
 
+      if (!skipTrailPass) {
       blurEmberField(motionEmberTmp, motionEmber, emberW, emberH);
-      blurEmberField(motionEmber, motionEmberTmp, emberW, emberH);
       blurEmberField(motionSpeedEmberTmp, motionSpeedEmber, emberW, emberH);
-      blurEmberField(motionSpeedEmber, motionSpeedEmberTmp, emberW, emberH);
 
       const emberScaleX = emberW / procW;
       const emberScaleY = emberH / procH;
@@ -2639,18 +3871,19 @@
           const edgeBlend = clamp((emberVal - 0.055) / 0.14, 0, 1);
           const speedAlpha = clamp((localTrailSpeed - 0.04) / 0.9, 0.12, 1);
           const trailMix = clamp(
-            Math.pow(emberShape, 0.92) * (0.12 + localTrailSpeed * 0.36) * spatialGate * edgeBlend * speedAlpha,
+            Math.pow(emberShape, 0.88) * (0.16 + localTrailSpeed * 0.44) * spatialGate * edgeBlend * speedAlpha,
             0,
-            0.5
+            0.58
           );
           data[i] = Math.round(lerp(data[i], trail.r, trailMix));
           data[i + 1] = Math.round(lerp(data[i + 1], trail.g, trailMix));
           data[i + 2] = Math.round(lerp(data[i + 2], trail.b, trailMix));
         }
       }
+      }
 
       offCtx.putImageData(frame, 0, 0);
-      pushFrameSample(now);
+      pushFrameSample(frameStart);
       ctx.drawImage(offscreen, 0, 0, displayW, displayH);
 
       // Motion metric: normalize to 0–1, then smooth for stable readout.
@@ -2675,6 +3908,7 @@
           drawViewfinderPlaceholder("Render error — check console");
         }
       }
+      lastRenderDurationMs = performance.now() - frameStart;
       requestAnimationFrame(renderFrame);
     }
 
@@ -2682,108 +3916,263 @@
       return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--slot-pitch")) || 58;
     }
 
-    function getDialViewportHeight() {
-      if (!memoryDial) return 0;
-      const direct = memoryDial.clientHeight;
-      if (direct > 8) return direct;
-      const frame = memoryDial.parentElement;
-      if (frame?.clientHeight > 8) return Math.max(0, frame.clientHeight - 16);
-      const cssDial = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue("--dial-height")
-      );
-      return Number.isFinite(cssDial) && cssDial > 8 ? cssDial : 272;
+    function getDialViewportWidth() {
+      const wrap = memoryDial?.closest(".timeline-rack") || memoryDial?.parentElement;
+      if (wrap?.clientWidth > 8) return wrap.clientWidth;
+      if (memoryDial?.clientWidth > 8) return memoryDial.clientWidth;
+      return 280;
     }
+
+    function formatSessionTimestamp(totalSeconds) {
+      const s = Math.max(0, Math.round(totalSeconds));
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return `${mins}:${String(secs).padStart(2, "0")}`;
+    }
+
+    function getBallPlaybackDurationSec(ball) {
+      const ms = parseInt(ball?.dataset?.playbackMs, 10);
+      if (Number.isFinite(ms) && ms > 0) return ms / 1000;
+      return (getBallPlayFrameCount(ball) * GIF_DELAY_MS) / 1000;
+    }
+
+    function getSlotTimelineOffsetsSec(slots) {
+      if (!slots.length) return [];
+      const captureMs = slots.map((slot) => {
+        const raw = Number(slot.dataset.captureAtMs || slot.dataset.captureAt || "");
+        return Number.isFinite(raw) && raw > 0 ? raw : NaN;
+      });
+      const knownCaptureMs = captureMs.filter((v) => Number.isFinite(v));
+      const firstCaptureMs = knownCaptureMs.length ? Math.min(...knownCaptureMs) : NaN;
+      const offsets = [];
+      let fallbackSec = 0;
+      slots.forEach((slot, i) => {
+        let sec = NaN;
+        if (Number.isFinite(captureMs[i]) && Number.isFinite(firstCaptureMs)) {
+          sec = Math.max(0, (captureMs[i] - firstCaptureMs) / 1000);
+        }
+        if (!Number.isFinite(sec)) sec = fallbackSec;
+        if (i > 0) sec = Math.max(sec, offsets[i - 1] + 0.25);
+        offsets.push(sec);
+        const ball = slot.querySelector(".memory-ball");
+        fallbackSec = sec + (ball ? getBallPlaybackDurationSec(ball) : 1);
+      });
+      return offsets;
+    }
+
+    function applyTimelineSpacingAndTicks(slots, offsetsSec) {
+      if (!memoryBalls) return;
+      if (!slots.length) {
+        if (memoryTicks) memoryTicks.replaceChildren();
+        memoryBalls.style.width = "";
+        if (memoryTicks) memoryTicks.style.width = "";
+        return;
+      }
+
+      const slotPitch = getSlotPitch();
+      slots.forEach((slot) => {
+        slot.style.width = `${slotPitch}px`;
+      });
+
+      const totalTrackW = Math.max(slotPitch, slotPitch * slots.length);
+      memoryBalls.style.width = `${totalTrackW}px`;
+      if (memoryTicks) {
+        memoryTicks.style.width = `${totalTrackW}px`;
+        memoryTicks.replaceChildren();
+      }
+    }
+
+    function updateMemorySlotTimestamps() {
+      if (!memoryBalls) return;
+      const slots = [...memoryBalls.querySelectorAll(".memory-slot")];
+      const offsetsSec = getSlotTimelineOffsetsSec(slots);
+      slots.forEach((slot, i) => {
+        const timeEl = slot.querySelector(".memory-slot-time");
+        if (!timeEl) return;
+        const startSec = Math.round(offsetsSec[i] || 0);
+        timeEl.textContent = formatSessionTimestamp(startSec);
+        timeEl.dateTime = `PT${startSec}S`;
+      });
+      applyTimelineSpacingAndTicks(slots, offsetsSec);
+    }
+
+    let lastDialLayoutKey = "";
 
     function getDialBallCount() {
       return memoryBalls ? memoryBalls.querySelectorAll(".memory-ball").length : 0;
     }
 
-    function getCenterDialIndex(n = getDialBallCount()) {
-      if (n <= 0) return 0;
-      return Math.floor((n - 1) / 2);
-    }
-
-    function insertMemorySlotAtCenter(slot) {
-      const before = memoryBalls.children.length;
-      const insertIdx = Math.floor(before / 2);
-      if (insertIdx >= before) memoryBalls.append(slot);
-      else memoryBalls.insertBefore(slot, memoryBalls.children[insertIdx]);
-      return insertIdx;
-    }
-
-    function scrollYForIndex(index) {
-      return -index * getSlotPitch();
-    }
-
-    function getDialScrollLimits() {
-      const n = getDialBallCount();
-      if (n <= 0) return { min: 0, max: 0 };
-      const min = scrollYForIndex(n - 1);
-      const max = scrollYForIndex(0);
-      return { min: Math.min(min, max), max: Math.max(min, max) };
-    }
-
-    function clampDialScroll(y) {
-      const { min, max } = getDialScrollLimits();
-      if (min === max) return y;
-      return clamp(y, min, max);
+    function appendMemorySlot(slot) {
+      memoryBalls.appendChild(slot);
+      return memoryBalls.children.length - 1;
     }
 
     function getSelectedDialIndex() {
       const n = getDialBallCount();
       if (!n) return 0;
-      const pitch = getSlotPitch();
-      const idx = Math.round(-dialScrollY / pitch);
-      return clamp(idx, 0, n - 1);
+      return clamp(selectedDialIndex, 0, n - 1);
     }
 
-    function applyDialScroll(y, animate = true) {
-      if (!memoryDialStrip) return;
-      dialScrollY = clampDialScroll(y);
-      memoryDialStrip.style.transition = animate
+    function getDialIndexAtClientX(clientX) {
+      const slots = memoryBalls ? [...memoryBalls.querySelectorAll(".memory-slot")] : [];
+      if (!slots.length || !memoryRack) return 0;
+      const rackRect = memoryRack.getBoundingClientRect();
+      const x = clientX - rackRect.left;
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      slots.forEach((slot, i) => {
+        const slotRect = slot.getBoundingClientRect();
+        const cx = slotRect.left + slotRect.width / 2 - rackRect.left;
+        const dist = Math.abs(x - cx);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      });
+      return bestIdx;
+    }
+
+    function slotCenterX(slot) {
+      const rackRect = memoryRack.getBoundingClientRect();
+      const slotRect = slot.getBoundingClientRect();
+      return slotRect.left + slotRect.width / 2 - rackRect.left;
+    }
+
+    function getReelDurationMs(fromIndex = 0) {
+      const balls = memoryBalls ? [...memoryBalls.querySelectorAll(".memory-ball")] : [];
+      if (!balls.length) return 1;
+      const start = clamp(fromIndex, 0, balls.length - 1);
+      let total = 0;
+      for (let i = start; i < balls.length; i += 1) {
+        total += getBallPlaybackDurationMs(balls[i]);
+      }
+      return Math.max(1, total);
+    }
+
+    function getPlayheadTrackBounds() {
+      if (!memoryRack || !memoryDial) return { left: 0, right: 0 };
+      const slots = memoryBalls ? [...memoryBalls.querySelectorAll(".memory-slot")] : [];
+      const rackRect = memoryRack.getBoundingClientRect();
+      if (slots.length) {
+        const firstRect = slots[0].getBoundingClientRect();
+        const lastRect = slots[slots.length - 1].getBoundingClientRect();
+        const left = Math.max(0, firstRect.left - rackRect.left);
+        const right = Math.max(left, lastRect.right - rackRect.left - 2);
+        return { left, right };
+      }
+      const dialRect = memoryDial.getBoundingClientRect();
+      const left = Math.max(0, dialRect.left - rackRect.left);
+      const right = Math.max(left, dialRect.right - rackRect.left - 2);
+      return { left, right };
+    }
+
+    function updateTimelinePlayheadProgress(progress, animate = false) {
+      if (!timelinePlayhead) return;
+      const { left, right } = getPlayheadTrackBounds();
+      const p = clamp(progress, 0, 1);
+      const x = left + (right - left) * p;
+      timelinePlayhead.style.transition = animate
+        ? "transform 0.18s linear"
+        : "none";
+      timelinePlayhead.style.transform = `translateX(${Math.max(0, x)}px)`;
+    }
+
+    function updateTimelinePlayheadAtIndex(index, animate = true) {
+      if (!timelinePlayhead || !memoryRack) return;
+      timelinePlayhead.style.transition = animate
         ? "transform 0.38s cubic-bezier(0.34, 1.25, 0.64, 1)"
         : "none";
-      memoryDialStrip.style.transform = `translateY(${dialScrollY}px)`;
-      updateDialFocus();
+      const slots = memoryBalls ? memoryBalls.querySelectorAll(".memory-slot") : [];
+      if (!slots.length) {
+        timelinePlayhead.style.transform = "translateX(0)";
+        return;
+      }
+      const idx = clamp(index, 0, slots.length - 1);
+      const slot = slots[idx];
+      if (!slot) return;
+      const centerX = slotCenterX(slot);
+      timelinePlayhead.style.transform = `translateX(${Math.max(0, centerX - 1)}px)`;
     }
 
-    function snapDialToIndex(index, animate = true) {
+    function syncTimelinePlayhead(animate = true) {
+      if (reelPlaying && !playbackPaused && reelTotalDurationMs > 0) {
+        const elapsed = Math.max(0, performance.now() - reelStartTimestamp);
+        reelHoldProgress = clamp(elapsed / reelTotalDurationMs, 0, 1);
+        updateTimelinePlayheadProgress(reelHoldProgress, false);
+        return;
+      }
+      if (!reelPlaying && reelWasActive) {
+        updateTimelinePlayheadProgress(reelHoldProgress, false);
+        return;
+      }
+      if (!reelPlaying && !reelWasActive) {
+        timelinePlayhead.style.transition = animate
+          ? "transform 0.38s cubic-bezier(0.34, 1.25, 0.64, 1)"
+          : "none";
+        timelinePlayhead.style.transform = "translateX(0)";
+        return;
+      }
+      updateTimelinePlayheadAtIndex(playheadIndex, animate);
+    }
+
+    function startContinuousPlayhead() {
+      if (reelPlayheadTimer) {
+        cancelAnimationFrame(reelPlayheadTimer);
+        reelPlayheadTimer = null;
+      }
+      const tick = () => {
+        if (!reelPlaying || playbackPaused || reelTotalDurationMs <= 0) {
+          reelPlayheadTimer = null;
+          return;
+        }
+        const elapsed = Math.max(0, performance.now() - reelStartTimestamp);
+        reelHoldProgress = clamp(elapsed / reelTotalDurationMs, 0, 1);
+        updateTimelinePlayheadProgress(reelHoldProgress, false);
+        reelPlayheadTimer = requestAnimationFrame(tick);
+      };
+      tick();
+    }
+
+    function setPlayheadIndex(index, animate = true) {
+      const n = getDialBallCount();
+      playheadIndex = n ? clamp(index, 0, n - 1) : 0;
+      requestAnimationFrame(() => updateTimelinePlayheadAtIndex(playheadIndex, animate));
+    }
+
+    function setSelectedDialIndex(index) {
+      const n = getDialBallCount();
+      selectedDialIndex = n ? clamp(index, 0, n - 1) : 0;
+      requestAnimationFrame(() => updateDialFocus());
+    }
+
+    function snapDialToIndex(index) {
       const n = getDialBallCount();
       if (!n) return;
       const idx = ((index % n) + n) % n;
-      applyDialScroll(scrollYForIndex(idx), animate);
-    }
-
-    function snapDialToNearest(animate = true) {
-      snapDialToIndex(getSelectedDialIndex(), animate);
+      setSelectedDialIndex(idx);
     }
 
     function playBallGif(ball) {
-      const img = ball.querySelector("img");
       const gifUrl = ball.dataset.gifUrl;
       const poster = ball.dataset.posterUrl || "";
-      if (!img || !gifUrl || !isAnimatedGifUrl(gifUrl)) {
-        if (img && poster && img.src !== poster) img.src = poster;
+      if (!gifUrl || !isAnimatedGifUrl(gifUrl)) {
+        if (poster) showPlaybackStill(poster);
         return;
       }
-      if (img.dataset.playing === "1" && img.getAttribute("data-active-src") === gifUrl) return;
 
       const startGif = () => {
-        img.onerror = () => {
-          img.onerror = null;
-          img.dataset.playing = "0";
-          img.removeAttribute("data-active-src");
-          if (ball._captureFrames?.length) playBallFrameLoop(ball);
-          else if (poster) img.src = poster;
+        if (!playbackDisplay) return;
+        playbackDisplay.onerror = () => {
+          playbackDisplay.onerror = null;
+          if (ball._captureFrames?.length) playPlaybackFrameLoop(ball);
+          else if (poster) showPlaybackStill(poster);
         };
-        img.dataset.playing = "1";
-        img.setAttribute("data-active-src", gifUrl);
-        const needsRestart = img.src === gifUrl || img.currentSrc === gifUrl;
+        const needsRestart = playbackDisplay.src === gifUrl;
         if (needsRestart) {
-          img.src = "";
-          requestAnimationFrame(() => { img.src = gifUrl; });
+          playbackDisplay.src = "";
+          requestAnimationFrame(() => { showPlaybackStill(gifUrl); });
         } else {
-          img.src = gifUrl;
+          showPlaybackStill(gifUrl);
         }
       };
 
@@ -2800,75 +4189,103 @@
       probe.onerror = () => {
         ball.dataset.gifReady = "0";
         if (ball.classList.contains("is-selected") && ball._captureFrames?.length) {
-          playBallFrameLoop(ball);
+          playPlaybackFrameLoop(ball);
         } else if (poster) {
-          img.src = poster;
+          showPlaybackStill(poster);
         }
       };
       probe.src = gifUrl;
     }
 
-    function pauseBallGif(ball) {
-      const img = ball.querySelector("img");
-      const poster = ball.dataset.posterUrl;
-      if (!img) return;
-      img.dataset.playing = "0";
-      img.removeAttribute("data-active-src");
-      if (poster && img.src !== poster) img.src = poster;
-    }
-
     function playBallMemory(ball) {
-      if (!ball) return;
-      stopBallFrameLoop(ball);
+      if (!ball) {
+        clearPlaybackScreen();
+        return;
+      }
+      if (reelPlaying) return;
+      playbackPaused = false;
+      if (btnPlay) btnPlay.classList.add("is-active");
+      const poster = ball.dataset.posterUrl || "";
+      if (ball._captureFrames?.length >= 2) {
+        playPlaybackFrameLoop(ball);
+        return;
+      }
       const gifUrl = ball.dataset.gifUrl;
       if (isAnimatedGifUrl(gifUrl)) {
         playBallGif(ball);
         return;
       }
-      if (ball._captureFrames?.length >= 2) {
-        playBallFrameLoop(ball);
-        return;
-      }
-      pauseBallGif(ball);
+      if (poster) showPlaybackStill(poster);
+      else clearPlaybackScreen();
     }
 
-    function pauseBallMemory(ball) {
-      stopBallFrameLoop(ball);
-      pauseBallGif(ball);
+    function applyDialSelection(selectedIdx) {
+      if (!memoryBalls) return null;
+      const balls = [...memoryBalls.querySelectorAll(".memory-ball")];
+      let selectedBall = null;
+      balls.forEach((ball, i) => {
+        const isSelected = i === selectedIdx;
+        const slot = ball.closest(".memory-slot");
+        ball.classList.toggle("is-selected", isSelected);
+        slot?.classList.toggle("is-selected", isSelected);
+        if (isSelected) selectedBall = ball;
+      });
+      return selectedBall;
     }
 
     function updateDialFocus() {
       if (!memoryBalls) return;
-      const balls = [...memoryBalls.querySelectorAll(".memory-ball")];
       const selectedIdx = getSelectedDialIndex();
-      balls.forEach((ball, i) => {
-        const isSelected = i === selectedIdx;
-        ball.classList.toggle("is-selected", isSelected);
-        if (isSelected) playBallMemory(ball);
-        else pauseBallMemory(ball);
-      });
+      const selectedBall = applyDialSelection(selectedIdx);
+      if (!selectedBall) {
+        clearPlaybackScreen();
+        return;
+      }
+      if (reelPlaying) return;
+      const hasLoopMedia = (selectedBall._captureFrames?.length >= 2)
+        || isAnimatedGifUrl(selectedBall.dataset.gifUrl);
+      if (hasLoopMedia && playbackPaused) {
+        playbackPaused = false;
+        if (btnPlay) btnPlay.classList.add("is-active");
+      }
+      if (!playbackPaused && hasLoopMedia) playBallMemory(selectedBall);
+      else showSelectedBallPreview(selectedBall);
     }
 
-    function layoutDialBalls() {
+    function layoutDialBalls(forceSnap = false) {
       if (!memoryBalls || !memoryDial) return;
-      const pitch = getSlotPitch();
-      const viewportH = getDialViewportHeight();
-      const pad = Math.max(0, viewportH / 2 - pitch / 2);
-      memoryBalls.style.paddingTop = `${pad}px`;
-      memoryBalls.style.paddingBottom = `${pad}px`;
       const n = getDialBallCount();
-      if (n > 0) snapDialToIndex(getCenterDialIndex(n), false);
-      else if (memoryDialStrip) memoryDialStrip.style.transform = "translateY(0px)";
+      const viewportW = getDialViewportWidth();
+      updateMemorySlotTimestamps();
+      const captureKey = [...memoryBalls.querySelectorAll(".memory-slot")]
+        .map((slot) => slot.dataset.captureAtMs || "")
+        .join("|");
+      const layoutKey = `${n}-${viewportW}-${captureKey}`;
+      if (layoutKey === lastDialLayoutKey && !forceSnap) return;
+      lastDialLayoutKey = layoutKey;
+
+      if (memoryDialStrip) {
+        memoryDialStrip.style.transition = "none";
+        memoryDialStrip.style.transform = "translateX(0px)";
+      }
+      if (n > 0) {
+        selectedDialIndex = clamp(selectedDialIndex, 0, n - 1);
+        playheadIndex = clamp(playheadIndex, 0, n - 1);
+      } else {
+        selectedDialIndex = 0;
+        playheadIndex = 0;
+      }
+      requestAnimationFrame(() => syncTimelinePlayhead(false));
       updateDialFocus();
     }
 
-    function scheduleLayoutDialBalls(attempt = 0) {
-      layoutDialBalls();
+    function scheduleLayoutDialBalls(attempt = 0, forceSnap = false) {
+      layoutDialBalls(forceSnap);
       const needsRetry = getDialBallCount() > 0
-        && getDialViewportHeight() < 8
-        && attempt < 8;
+        && getDialViewportWidth() < 8
+        && attempt < 4;
       if (needsRetry) {
-        requestAnimationFrame(() => scheduleLayoutDialBalls(attempt + 1));
+        requestAnimationFrame(() => scheduleLayoutDialBalls(attempt + 1, forceSnap));
       }
     }
 
@@ -2877,9 +4294,20 @@
       dialLayoutTimer = setTimeout(() => scheduleLayoutDialBalls(), 60);
     }
 
-    function debouncedResizeCanvases() {
-      clearTimeout(resizeCanvasTimer);
-      resizeCanvasTimer = setTimeout(resizeCanvases, 60);
+    function bindCanvasLayoutOnce() {
+      const onViewportLayoutChange = () => {
+        lastCanvasLayoutW = 0;
+        lastCanvasLayoutH = 0;
+        layoutViewfinderFromFeed();
+        syncTimelinePlayhead(false);
+      };
+      window.addEventListener("resize", () => {
+        onViewportLayoutChange();
+        debouncedScheduleLayoutDialBalls();
+      });
+      window.addEventListener("orientationchange", () => {
+        setTimeout(onViewportLayoutChange, 350);
+      });
     }
 
     function setBallMedia(ball, mediaUrl, posterUrl) {
@@ -2908,40 +4336,57 @@
       if (!preview) return null;
 
       memoryRack.classList.remove("empty");
+      updatePlaybackIdleVisibility();
       const slot = document.createElement("div");
       slot.className = "memory-slot";
+      const prevSlot = memoryBalls.lastElementChild;
+      const prevCaptureMs = Number(prevSlot?.dataset?.captureAtMs || "");
+      const prevBall = prevSlot?.querySelector(".memory-ball");
+      const prevPlaybackMs = parseInt(prevBall?.dataset?.playbackMs || "", 10);
+      const inferredGapMs = Number.isFinite(prevPlaybackMs) && prevPlaybackMs > 0
+        ? prevPlaybackMs
+        : 4000;
+      const captureAtMs = Number.isFinite(prevCaptureMs)
+        ? Math.max(Date.now(), prevCaptureMs + inferredGapMs)
+        : Date.now();
+      slot.dataset.captureAtMs = String(captureAtMs);
       const ball = document.createElement("div");
       ball.className = "memory-ball is-new";
       applyBallMood(ball, mood);
       slot.appendChild(ball);
-      const centerIdx = insertMemorySlotAtCenter(slot);
+      const timeEl = document.createElement("time");
+      timeEl.className = "memory-slot-time";
+      slot.appendChild(timeEl);
+      const newIdx = appendMemorySlot(slot);
       setBallMedia(ball, preview, posterUrl || preview);
       if (captureFrames?.length) attachBallCaptureFrames(ball, captureFrames);
-      scheduleLayoutDialBalls();
+      updateMemorySlotTimestamps();
+      scheduleLayoutDialBalls(0, true);
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          snapDialToIndex(centerIdx, true);
-          updateDialFocus();
-          setTimeout(() => ball.classList.remove("is-new"), 560);
-        });
+        reelPlaying = false;
+        playbackPaused = false;
+        reelProgrammatic = true;
+        snapDialToIndex(newIdx);
+        reelProgrammatic = false;
+        if (btnPlay) btnPlay.classList.add("is-active");
+        setTimeout(() => ball.classList.remove("is-new"), 480);
       });
       return ball;
     }
 
     function onDialPointerDown(e) {
       if (!memoryDial || getDialBallCount() === 0) return;
+      if (reelPlaying) pausePlayback();
       dialDragging = true;
       dialPointerId = e.pointerId;
       memoryDial.classList.add("is-dragging");
       memoryDial.setPointerCapture(e.pointerId);
-      dialDragStartY = e.clientY;
-      dialDragStartScroll = dialScrollY;
-      if (memoryDialStrip) memoryDialStrip.style.transition = "none";
+      setSelectedDialIndex(getDialIndexAtClientX(e.clientX));
     }
 
     function onDialPointerMove(e) {
       if (!dialDragging || e.pointerId !== dialPointerId) return;
-      applyDialScroll(dialDragStartScroll + (e.clientY - dialDragStartY), false);
+      setSelectedDialIndex(getDialIndexAtClientX(e.clientX));
     }
 
     function onDialPointerUp(e) {
@@ -2950,16 +4395,35 @@
       dialPointerId = null;
       memoryDial.classList.remove("is-dragging");
       try { memoryDial.releasePointerCapture(e.pointerId); } catch (_) {}
-      snapDialToNearest(true);
+      setSelectedDialIndex(getDialIndexAtClientX(e.clientX));
+      markUserReelStart(getSelectedDialIndex());
+      playbackPaused = true;
     }
 
     function onDialWheel(e) {
       if (!memoryDial || getDialBallCount() === 0) return;
       e.preventDefault();
+      if (reelPlaying) pausePlayback();
       const n = getDialBallCount();
       const idx = getSelectedDialIndex();
-      const next = e.deltaY > 0 ? (idx - 1 + n) % n : (idx + 1) % n;
-      snapDialToIndex(next, true);
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const next = delta > 0 ? (idx - 1 + n) % n : (idx + 1) % n;
+      markUserReelStart(next);
+      playbackPaused = true;
+      snapDialToIndex(next);
+    }
+
+    function onMemoryBallActivate(ball) {
+      if (!ball || !memoryBalls) return;
+      const balls = [...memoryBalls.querySelectorAll(".memory-ball")];
+      const idx = balls.indexOf(ball);
+      if (idx < 0) return;
+      if (reelPlaying) pausePlayback();
+      markUserReelStart(idx);
+      playbackPaused = true;
+      reelProgrammatic = true;
+      snapDialToIndex(idx);
+      reelProgrammatic = false;
     }
 
     function initMemoryDial() {
@@ -2969,39 +4433,347 @@
       memoryDial.addEventListener("pointerup", onDialPointerUp);
       memoryDial.addEventListener("pointercancel", onDialPointerUp);
       memoryDial.addEventListener("wheel", onDialWheel, { passive: false });
+      memoryBalls?.addEventListener("click", (e) => {
+        const ball = e.target.closest(".memory-ball");
+        if (!ball) return;
+        onMemoryBallActivate(ball);
+      });
       window.addEventListener("resize", debouncedScheduleLayoutDialBalls);
-      if (memoryRack && typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(debouncedScheduleLayoutDialBalls).observe(memoryRack);
-      }
-      scheduleLayoutDialBalls();
+      scheduleLayoutDialBalls(0, true);
     }
 
-    const VF_TRANSMISSION_MSG =
-      "Hold your absolute best smile! Energy levels are indicated by your facial expression and movement.";
+    const PLAYBACK_IDLE_MSG = "Hold your best smile to form a core memory!";
 
-    function initViewfinderTransmission() {
-      const textEl = document.getElementById("vfTransmissionText");
-      const cursorEl = document.getElementById("vfTransmissionCursor");
-      if (!textEl) return;
+    const ONBOARDING_LINES = [
+      "Some moments you'll look back on and say, \"I needed that\".",
+      "CoreCam reads the energy on your face and saves them for you before you even knew they were happening."
+    ];
+    const INFO_OVERLAY_MSG = ONBOARDING_LINES[1];
 
-      const charMs = 36;
-      const startDelayMs = 500;
-      let index = 0;
+    function delay(ms) {
+      return new Promise((resolve) => { setTimeout(resolve, ms); });
+    }
 
-      function typeNext() {
-        if (index >= VF_TRANSMISSION_MSG.length) {
-          cursorEl?.classList.add("is-done");
+    async function cancellableDelay(ms) {
+      const end = performance.now() + ms;
+      while (performance.now() < end) {
+        if (onboardingDismissLock) return;
+        await delay(Math.min(40, Math.max(0, end - performance.now())));
+      }
+    }
+
+    function createLcdTypewriterFrame(container, text, { charMs = 45 } = {}) {
+      return new Promise((resolve) => {
+        if (!container) {
+          resolve();
           return;
         }
-        textEl.textContent += VF_TRANSMISSION_MSG.charAt(index);
-        index += 1;
-        setTimeout(typeNext, charMs);
-      }
+        container.replaceChildren();
+        const track = document.createElement("span");
+        track.className = "typewriter-track lcd-typewriter-track";
+        const charSpans = [];
+        for (const ch of text) {
+          const span = document.createElement("span");
+          span.className = "typewriter-char";
+          span.textContent = ch;
+          track.appendChild(span);
+          charSpans.push(span);
+        }
+        const cursor = document.createElement("span");
+        cursor.className = "typewriter-cursor lcd-typewriter-cursor";
+        cursor.setAttribute("aria-hidden", "true");
+        cursor.textContent = "▋";
+        track.insertBefore(cursor, charSpans[0] || null);
+        container.appendChild(track);
 
-      setTimeout(typeNext, startDelayMs);
+        let index = 0;
+        function tick() {
+          if (playbackIdleLoopAbort || getDialBallCount() > 0) {
+            resolve();
+            return;
+          }
+          if (index >= charSpans.length) {
+            track.appendChild(cursor);
+            resolve();
+            return;
+          }
+          charSpans[index].classList.add("is-revealed");
+          index += 1;
+          if (index < charSpans.length) {
+            track.insertBefore(cursor, charSpans[index]);
+          } else {
+            track.appendChild(cursor);
+          }
+          setTimeout(tick, charMs);
+        }
+        tick();
+      });
     }
 
-    function initHeaderChips() {
+    let playbackIdleLoopAbort = false;
+
+    async function runPlaybackIdleTypewriterLoop() {
+      if (!playbackIdleBody || getDialBallCount() > 0) return;
+      playbackIdleLoopAbort = false;
+
+      while (!playbackIdleLoopAbort && getDialBallCount() === 0) {
+        await createLcdTypewriterFrame(playbackIdleBody, PLAYBACK_IDLE_MSG, { charMs: 45 });
+        if (playbackIdleLoopAbort || getDialBallCount() > 0) break;
+        await delay(3200 + Math.floor(Math.random() * 800));
+        if (playbackIdleLoopAbort || getDialBallCount() > 0) break;
+        playbackIdleBody.replaceChildren();
+      }
+    }
+
+    function stopPlaybackIdleTypewriter() {
+      playbackIdleLoopAbort = true;
+      playbackIdleBody?.replaceChildren();
+    }
+
+    function createTypewriter(container, text, { charMs = 40, cursorClass = "typewriter-cursor" } = {}) {
+      return new Promise((resolve) => {
+        if (!container) {
+          resolve();
+          return;
+        }
+        container.replaceChildren();
+        const track = document.createElement("span");
+        track.className = "typewriter-track";
+        const charSpans = [];
+        for (const ch of text) {
+          const span = document.createElement("span");
+          span.className = "typewriter-char";
+          span.textContent = ch;
+          track.appendChild(span);
+          charSpans.push(span);
+        }
+        const cursor = document.createElement("span");
+        cursor.className = cursorClass;
+        cursor.setAttribute("aria-hidden", "true");
+        cursor.textContent = "▌";
+        track.insertBefore(cursor, charSpans[0] || null);
+        container.appendChild(track);
+
+        let index = 0;
+        function tick() {
+          if (onboardingDismissLock) {
+            resolve();
+            return;
+          }
+          if (index >= charSpans.length) {
+            cursor.classList.add("is-done");
+            track.appendChild(cursor);
+            resolve();
+            return;
+          }
+          charSpans[index].classList.add("is-revealed");
+          index += 1;
+          if (index < charSpans.length) {
+            track.insertBefore(cursor, charSpans[index]);
+          } else {
+            track.appendChild(cursor);
+          }
+          setTimeout(tick, charMs);
+        }
+        tick();
+      });
+    }
+
+    let onboardingTapResolver = null;
+    let onboardingDismissLock = false;
+
+    function resetOnboardingOverlay() {
+      if (!onboardingOverlay) return;
+      onboardingDismissLock = false;
+      onboardingTapResolver = null;
+      onboardingOverlay.classList.remove("is-fading", "is-done", "is-ready", "is-info-only");
+      onboardingOverlay.removeAttribute("aria-hidden");
+      onboardingOverlay.setAttribute("aria-labelledby", "onboardingLine1");
+      line2Reset();
+      onboardingTapHint?.classList.remove("is-visible");
+    }
+
+    function line2Reset() {
+      const line2 = document.getElementById("onboardingLine2");
+      line2?.classList.remove("is-visible");
+      if (line2) line2.replaceChildren();
+    }
+
+    function waitForOnboardingTap() {
+      return new Promise((resolve) => {
+        onboardingTapResolver = resolve;
+      });
+    }
+
+    function handleOnboardingOverlayClose() {
+      if (!onboardingOverlay || onboardingOverlay.classList.contains("is-done")) return;
+      if (onboardingOverlay.classList.contains("is-fading")) return;
+      if (onboardingDismissLock) return;
+      onboardingDismissLock = true;
+      const resolve = onboardingTapResolver;
+      onboardingTapResolver = null;
+      resolve?.();
+    }
+
+    function handleOnboardingOverlayTap() {
+      if (!onboardingOverlay?.classList.contains("is-ready")) return;
+      handleOnboardingOverlayClose();
+    }
+
+    async function dismissOnboardingOverlay(onDismiss) {
+      if (!onboardingOverlay) return;
+      onboardingOverlay.classList.remove("is-ready");
+      onboardingOverlay.classList.add("is-fading");
+      onDismiss?.();
+      await delay(1200);
+      onboardingOverlay.classList.add("is-done");
+      onboardingOverlay.setAttribute("aria-hidden", "true");
+      viewport?.classList.add("is-live");
+    }
+
+    async function dismissInfoOverlay() {
+      if (!onboardingOverlay) return;
+      onboardingOverlay.classList.remove("is-ready");
+      onboardingOverlay.classList.add("is-fading");
+      await delay(600);
+      onboardingOverlay.classList.remove("is-fading", "is-info-only");
+      onboardingOverlay.classList.add("is-done");
+      onboardingOverlay.setAttribute("aria-hidden", "true");
+      onboardingOverlay.setAttribute("aria-labelledby", "onboardingLine1");
+      line2Reset();
+    }
+
+    async function showInfoOverlay() {
+      const line1 = document.getElementById("onboardingLine1");
+      const line2 = document.getElementById("onboardingLine2");
+      if (!onboardingOverlay || !line2) return;
+      if (!onboardingOverlay.classList.contains("is-done")) return;
+
+      onboardingDismissLock = false;
+      onboardingTapResolver = null;
+
+      onboardingOverlay.classList.remove("is-fading", "is-done");
+      onboardingOverlay.removeAttribute("aria-hidden");
+      const dismissed = waitForOnboardingTap();
+
+      line1?.replaceChildren();
+      line2.textContent = INFO_OVERLAY_MSG;
+      line2.classList.add("is-visible");
+      onboardingOverlay.setAttribute("aria-labelledby", "onboardingLine2");
+      onboardingOverlay.classList.add("is-info-only", "is-ready");
+      onboardingOverlay.focus({ preventScroll: true });
+
+      await dismissed;
+      await dismissInfoOverlay();
+    }
+
+    async function runOnboardingTypewriterSequence(line1, line2) {
+      await cancellableDelay(500);
+      if (onboardingDismissLock) return;
+      await createTypewriter(line1, ONBOARDING_LINES[0], {
+        charMs: 44,
+        cursorClass: "typewriter-cursor vf-intro-cursor"
+      });
+      if (onboardingDismissLock) return;
+      await cancellableDelay(700);
+      if (onboardingDismissLock) return;
+      line2?.classList.add("is-visible");
+      await cancellableDelay(350);
+      if (onboardingDismissLock) return;
+      await createTypewriter(line2, ONBOARDING_LINES[1], {
+        charMs: 36,
+        cursorClass: "typewriter-cursor vf-intro-cursor"
+      });
+      if (onboardingDismissLock) return;
+      onboardingOverlay?.classList.add("is-ready");
+      onboardingOverlay?.focus({ preventScroll: true });
+    }
+
+    async function showOnboardingOverlay({ bootCamera = false, onDismiss } = {}) {
+      const line1 = document.getElementById("onboardingLine1");
+      const line2 = document.getElementById("onboardingLine2");
+
+      resetOnboardingOverlay();
+      const dismissed = waitForOnboardingTap();
+
+      const cameraBoot = bootCamera ? bootCameraAndModels() : null;
+      if (bootCamera) resizeCanvases();
+
+      runOnboardingTypewriterSequence(line1, line2);
+
+      await dismissed;
+      await dismissOnboardingOverlay(onDismiss);
+
+      if (cameraBoot) await cameraBoot;
+    }
+
+    async function runOnboardingIntro(onLiveStart) {
+      await showOnboardingOverlay({ bootCamera: true, onDismiss: onLiveStart });
+    }
+
+    function initOnboardingOverlay() {
+      if (!onboardingOverlay || onboardingOverlay.dataset.bound === "1") return;
+      onboardingOverlay.dataset.bound = "1";
+
+      const onDismissTap = (e) => {
+        if (!onboardingOverlay.classList.contains("is-ready")) return;
+        if (onboardingOverlay.classList.contains("is-fading")) return;
+        e.preventDefault();
+        handleOnboardingOverlayTap();
+      };
+
+      onboardingOverlay.addEventListener("click", onDismissTap);
+      onboardingOverlay.addEventListener("pointerup", onDismissTap);
+      onboardingOverlay.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleOnboardingOverlayTap();
+        }
+      });
+
+      btnOnboardingInfo?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showInfoOverlay();
+      });
+
+      btnOnboardingClose?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        handleOnboardingOverlayClose();
+      });
+    }
+
+    function setViewfinderAlert(message) {
+      if (!vfAlert || !vfAlertLine) return;
+      vfAlertLine.textContent = message;
+      vfAlert.hidden = false;
+      vfAlert.classList.add("is-visible");
+      vfGuidance?.classList.add("is-muted");
+    }
+
+    function clearViewfinderAlert() {
+      if (!vfAlert) return;
+      vfAlert.hidden = true;
+      vfAlert.classList.remove("is-visible");
+      if (vfAlertLine) vfAlertLine.textContent = "";
+      vfGuidance?.classList.remove("is-muted");
+    }
+
+    function updatePlaybackIdleVisibility() {
+      const hasMemories = getDialBallCount() > 0;
+      playbackViewport?.classList.toggle("has-memories", hasMemories);
+      if (hasMemories) stopPlaybackIdleTypewriter();
+    }
+
+    function initPlaybackIdleMessage() {
+      if (!playbackIdleBody || getDialBallCount() > 0) return;
+
+      setTimeout(() => {
+        if (getDialBallCount() > 0) return;
+        runPlaybackIdleTypewriterLoop();
+      }, 500);
+    }
+
+    function initDeviceControls() {
       chipCapture?.addEventListener("click", () => {
         if (captureBusy || captureFinalizing) return;
         if (video.readyState < 2) {
@@ -3011,11 +4783,25 @@
         queuePeakMemoryCapture(true);
       });
 
-      chipMemories?.addEventListener("click", () => {
-        const n = getDialBallCount();
-        if (!n) return;
-        snapDialToIndex(getCenterDialIndex(n), true);
+      btnPrevRow?.addEventListener("click", () => stepMemoryRow(-1));
+      btnNextRow?.addEventListener("click", () => stepMemoryRow(1));
+
+      btnSlow?.addEventListener("click", () => {
+        setPlaybackSpeedIndex(playbackSpeedIndex - 1);
       });
+      btnFast?.addEventListener("click", () => {
+        setPlaybackSpeedIndex(playbackSpeedIndex + 1);
+      });
+
+      btnPlay?.addEventListener("click", () => {
+        if (!playbackPaused && reelPlaying) {
+          pausePlayback();
+          return;
+        }
+        if (playbackPaused) resumePlayback();
+      });
+
+      btnStopPause?.addEventListener("click", () => pausePlayback());
     }
 
     async function waitForVideoReady() {
@@ -3038,52 +4824,66 @@
       video.srcObject = stream;
       await video.play();
       await waitForVideoReady();
+      layoutViewfinderFromFeed();
       console.log("webcam ready", video.videoWidth, "x", video.videoHeight);
+    }
+
+    async function bootCameraAndModels() {
+      try {
+        if (footerStatus) footerStatus.textContent = "Acquiring sensor…";
+        await initWebcam();
+        rebuildActiveLUT(true);
+        if (footerStatus) footerStatus.textContent = "Camera live — loading models…";
+      } catch (error) {
+        console.error("Webcam init error", error);
+        setViewfinderAlert("Camera error — check permission and reload");
+        if (footerStatus) footerStatus.textContent = "Sensor offline";
+        requestAnimationFrame(renderFrame);
+        return;
+      }
+
+      try {
+        await loadModels();
+        modelsReady = true;
+        await runFaceDetection();
+        startDetectionLoop();
+        layoutViewfinderFromFeed();
+        clearViewfinderAlert();
+        if (footerStatus) footerStatus.textContent = "Sensor online · radiometric feed active";
+      } catch (error) {
+        console.error("Model load error", error);
+        setViewfinderAlert("Expression models unavailable — feed still live");
+        if (footerStatus) footerStatus.textContent = "Camera on — limited sensing";
+        layoutViewfinderFromFeed();
+        requestAnimationFrame(renderFrame);
+      }
     }
 
     async function init() {
       finishCapture();
       frameRing = [];
-      ensureThermalLUTs();
-      resizeCanvases();
-      window.addEventListener("resize", debouncedResizeCanvases);
-      if (viewport && typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(debouncedResizeCanvases).observe(viewport);
-      }
-      updateClockHands();
-      setInterval(updateClockHands, 1000);
-      initHeaderChips();
-      initMemoryDial();
-      initViewfinderTransmission();
-      requestAnimationFrame(renderFrame);
 
-      try {
-        if (footerStatus) footerStatus.textContent = "Acquiring sensor…";
-        await initWebcam();
-        rebuildActiveLUT(true);
-        resizeCanvases();
-        requestAnimationFrame(resizeCanvases);
-        if (footerStatus) footerStatus.textContent = "Camera live — loading models…";
+      initOnboardingOverlay();
 
-        await loadModels();
-        modelsReady = true;
-        await runFaceDetection();
-        startDetectionLoop();
-        resizeCanvases();
-        if (footerStatus) footerStatus.textContent = "Sensor online · radiometric feed active";
-      } catch (error) {
-        console.error("Init error", error);
-        if (footerStatus) {
-          footerStatus.textContent = error?.message?.includes("face-api")
-            ? "Camera on — expression models unavailable"
-            : "Camera error — check permission and reload";
-        }
-      }
+      await runOnboardingIntro(() => {
+        ensureThermalLUTs();
+        layoutViewfinderFromFeed();
+        bindCanvasLayoutOnce();
+        updateClockHands();
+        setInterval(updateClockHands, 1000);
+        initDeviceControls();
+        initMemoryDial();
+        initEnergyLedBar();
+        initPlaybackIdleMessage();
+        updatePlaybackIdleVisibility();
+        requestAnimationFrame(renderFrame);
+      });
     }
 
     init().catch((error) => {
       console.error("Fatal init error", error);
-      if (footerStatus) footerStatus.textContent = "Failed to start — see console";
+      setViewfinderAlert("Failed to start — see console");
+      if (footerStatus) footerStatus.textContent = "Startup failed";
     });
   </script>
 </body>
